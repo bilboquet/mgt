@@ -34,9 +34,13 @@ case $1 in
         ;;
     init)
         shift
+        if [ -z "$1" ]; then
+            echo "Project <name> cannot be empty"
+            exit 1
+        fi
         git --work-tree=$GIT_WTREE --git-dir=$GIT_WTREE/.git checkout -b "$1"
         if [ $? -ne 0 ]; then
-            return 1
+            exit 1
         fi
         echo "$1 - $(whoami)" > $GIT_WTREE/conf.d/description
         echo -n "$1" > $GIT_WTREE/conf.d/project
