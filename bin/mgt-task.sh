@@ -1,6 +1,6 @@
 #!/bin/bash
 
-GIT_WTREE=~/.mgt
+. common.sh
 PROJECT_PATH=$GIT_WTREE/project
 
 find_category() {
@@ -103,8 +103,8 @@ case $1 in
             exit 1
         fi
         sed -i -e 's/^\s*#.*$/d' "$PROJECT_PATH/$category/$task_id"
-        git --git-dir=$GIT_WTREE/.git --work-tree=$GIT_WTREE add "$GIT_WTREE/conf.d/task_id" "$PROJECT_PATH/$category/$task_id"
-        git --git-dir=$GIT_WTREE/.git --work-tree=$GIT_WTREE commit -s -m "$(cat $GIT_WTREE/conf.d/project): create: $category/$task_id" -m "$description"
+        $GIT add "$GIT_WTREE/conf.d/task_id" "$PROJECT_PATH/$category/$task_id"
+        $GIT commit -s -m "$(cat $GIT_WTREE/conf.d/project): create: $category/$task_id" -m "$description"
         echo "Task: $category/$task_id created successfully"
         ;;
     move)
@@ -154,8 +154,8 @@ case $1 in
             exit 1
         fi
 
-        git --git-dir=$GIT_WTREE/.git --work-tree=$GIT_WTREE mv "$PROJECT_PATH/$from/$task_id" "$PROJECT_PATH/$to"
-        git --git-dir=$GIT_WTREE/.git --work-tree=$GIT_WTREE commit -s -m "$(cat $GIT_WTREE/conf.d/project): move: '$from/$task_id' => '$to/$task_id'"
+        $GIT mv "$PROJECT_PATH/$from/$task_id" "$PROJECT_PATH/$to"
+        $GIT commit -s -m "$(cat $GIT_WTREE/conf.d/project): move: '$from/$task_id' => '$to/$task_id'"
         ;;
     edit)
         while [ true ]; do
@@ -189,8 +189,8 @@ case $1 in
         fi
 
         $EDITOR "$PROJECT_PATH/$category/$task_id"
-        git --git-dir=$GIT_WTREE/.git --work-tree=$GIT_WTREE add "$PROJECT_PATH/$category/$task_id"
-        git --git-dir=$GIT_WTREE/.git --work-tree=$GIT_WTREE commit -s -m "$(cat $GIT_WTREE/conf.d/project): edit: $category/$task_id"
+        $GIT add "$PROJECT_PATH/$category/$task_id"
+        $GIT commit -s -m "$(cat $GIT_WTREE/conf.d/project): edit: $category/$task_id"
         ;;
     rm)
         while [ true ]; do
@@ -223,8 +223,8 @@ case $1 in
             echo "mgt: task: '$category/$task_id' does not exists."
             exit 1
         fi
-        git --git-dir=$GIT_WTREE/.git --work-tree=$GIT_WTREE rm "$PROJECT_PATH/$category/$task_id"
-        git --git-dir=$GIT_WTREE/.git --work-tree=$GIT_WTREE commit -s -m "$(cat $GIT_WTREE/conf.d/project): remove: $category/$task_id"
+        $GIT rm "$PROJECT_PATH/$category/$task_id"
+        $GIT commit -s -m "$(cat $GIT_WTREE/conf.d/project): remove: $category/$task_id"
         ;;
     assign)
         while [ true ]; do
@@ -261,8 +261,8 @@ case $1 in
         fi
 
         sed -i "s/Assignee:\(.*\)/Assignee: $username/" $PROJECT_PATH/$category/$task_id
-        git --git-dir=$GIT_WTREE/.git --work-tree=$GIT_WTREE add "$PROJECT_PATH/$category/$task_id"
-        git --git-dir=$GIT_WTREE/.git --work-tree=$GIT_WTREE commit -s -m "$(cat $GIT_WTREE/conf.d/project): assign: $category/$task_id to $username"
+        $GIT add "$PROJECT_PATH/$category/$task_id"
+        $GIT commit -s -m "$(cat $GIT_WTREE/conf.d/project): assign: $category/$task_id to $username"
         ;;
     tag)
         ### TODO: Edit task file
