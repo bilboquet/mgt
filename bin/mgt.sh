@@ -1,4 +1,9 @@
 #!/bin/bash
+set -x
+PATH=$PATH:$(dirname $0)
+
+GIT_WTREE=~/.mgt
+GIT="git --work-tree=$GIT_WTREE --git-dir=$GIT_WTREE/.git"
 
 usage () {
     echo "usage: mgt init <-h|--help> -r <remote>"
@@ -14,14 +19,14 @@ fi
 
 case $1 in
     init)
-        while [ true ]; do
-            shift
-
+        shift # consume 'init'
+        while [ $# -gt 0 ]; do
             ### TODO: Validate arguments
             case $1 in
                 -r|--remote)
                 remote=$2
-                break
+                shift #consume -r
+                shift #consume remote
                 ;;
                 *)
                 echo "mgt: unknown option '$1'"
@@ -31,16 +36,16 @@ case $1 in
             shift
         done
 
-        GIT_WTREE=~/.mgt
         mkdir -p $GIT_WTREE/conf.d
         mkdir -p $GIT_WTREE/project
-        git --work-tree=$GIT_WTREE --git-dir=$GIT_WTREE/.git init
+        $GIT init
         echo "mgt: project management" > $GIT_WTREE/.git/description
-        git --work-tree=$GIT_WTREE --git-dir=$GIT_WTREE/.git add .
-        git --work-tree=$GIT_WTREE --git-dir=$GIT_WTREE/.git commit -s -m "Project: create project management repository"
-        if [ ! -z "$1" ]; then
-            git remote add origin "$1"
-            git push origin master
+        $GIT add .
+        $GIT commit -s -m "Project: create project management repository"
+        if [ ! -z "$remote" ]; then
+            $GIT remote remove origin
+            $GIT remote add origin $remote
+            $GIT push origin master
         fi
     ;;
     project)
