@@ -1,9 +1,8 @@
 #!/bin/bash
-set -x
+#set -x
 PATH=$PATH:$(dirname $0)
 
-GIT_WTREE=~/.mgt
-GIT="git --work-tree=$GIT_WTREE --git-dir=$GIT_WTREE/.git"
+. common.sh
 
 usage () {
     echo "usage: mgt init <-h|--help> -r <remote>"
