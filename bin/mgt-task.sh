@@ -13,7 +13,7 @@ usage () {
     echo "       mgt task create -c <category> -t <tag_comma_separated_list> -d <description>"
     echo "       mgt task move --from <category> --to <category> --task <task_id>"
     echo "       mgt task edit -c <category> --task <task_id>"
-    echo "       mgt task assign -c <category> --task <task_id> -u <username <user@server>"
+    echo "       mgt task assign -c <category> --task <task_id> -u <username <user@server>>"
     echo "       mgt task rm --task <task_id>"
     echo "       mgt task --help"
 }
@@ -69,6 +69,7 @@ case $1 in
                 while [ true ]; do
                     echo
                     echo "(q)uit (n)ext (s)how details self-(a)ssignment"
+                    echo "(h)istory"
                     read input
                     case $input in
                         q|quit)
@@ -83,8 +84,10 @@ case $1 in
                             echo "######################################"
                             ;;
                         a)
-                            ### TODO
-                            echo "### TODO"
+                            mgt task assign -c ${task%/*} --task ${task##*/} -u "$(git config user.name) <$(git config user.email)>"
+                            ;;
+                        h|history)
+                            $GIT log $PROJECT_PATH/$task
                             ;;
                         *)
                             ;;
