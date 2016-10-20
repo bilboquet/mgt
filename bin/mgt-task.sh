@@ -9,7 +9,7 @@ find_category() {
 }
 
 usage () {
-    echo "usage: mgt task list -ta--filter <criteria> [-i --interactive]"
+    echo "usage: mgt task list [-ta--filter <criteria>] [-i --interactive] [-a --all-projects]"
     echo "       mgt task create -c <category> -t <tag_comma_separated_list> -d <description>"
     echo "       mgt task move --from <category> --to <category> --task <task_id>"
     echo "       mgt task edit -c <category> --task <task_id>"
@@ -29,9 +29,8 @@ case $1 in
         ;;
     list)
         grep_filter=""
+        shift
         while [ true ]; do
-            shift
-
             if [ -z "$1" ]; then
                 break;
             fi
@@ -41,9 +40,14 @@ case $1 in
                     value=$(echo $2 | sed -s 's/.*=\(.*\)/\1/')
                     ### TODO: decide if we want an OR or AND filter
                     grep_filter="$grep_filter -e \"$keyword: .*$value\""
+                    shift
                     ;;
                 -i|--interactive)
                     interactive=1
+                    ;;
+                -a|--all-projects)
+                    ### TODO
+                    echo "TODO, will search for tasks matching in all projects"
                     ;;
                 *)
                     echo "mgt: task: unknown option '$1'"
