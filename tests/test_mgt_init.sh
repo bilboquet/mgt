@@ -4,7 +4,11 @@ PATH=$PATH:$(dirname $0)/../bin
 
 do_test () {
     echo "##### $1"
-    $1
+    if [ $# -eq 1 ]; then
+        $1
+    else
+        $1 <<< "$2"
+    fi
     echo
 }
 
@@ -44,3 +48,5 @@ do_test "mgt task create -c todo -d description"
 
 do_test "mgt task list"
 
+seq=$'s\nh\na\nh\nq'
+do_test "mgt task list -i" "$seq"
