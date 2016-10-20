@@ -85,6 +85,7 @@ case $1 in
                         a)
                             ### TODO
                             echo "### TODO"
+                            ;;
                         *)
                             ;;
                     esac
