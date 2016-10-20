@@ -10,7 +10,7 @@ find_category() {
 
 usage () {
     echo "usage: mgt task list [-ta--filter <criteria>] [-i --interactive] [-a --all-projects]"
-    echo "       mgt task create -c <category> -t <tag_comma_separated_list> -d <description>"
+    echo "       mgt task create [-c <category=todo>] [-t <tag_comma_separated_list>] -d <description>"
     echo "       mgt task move --from <category> --to <category> --task <task_id>"
     echo "       mgt task edit -c <category> --task <task_id>"
     echo "       mgt task assign -c <category> --task <task_id> -u <username <user@server>>"
@@ -126,9 +126,7 @@ case $1 in
         done
 
         if [ -z "$category" ]; then
-            usage
-            echo "Missing category"
-            exit 1
+            category="todo"
         fi
         if [ -z "$description" ]; then
             usage
