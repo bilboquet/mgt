@@ -72,8 +72,8 @@ case $1 in
             if [ ! -z $interactive ]; then
                 while [ true ]; do
                     echo
-                    echo "(q)uit (n)ext (s)how details self-(a)ssignment"
-                    echo "(h)istory"
+                    echo "(q)uit, (n)ext, (s)how details, self-(a)ssignment"
+                    echo "(h)istory."
                     read input
                     case $input in
                         q|quit)
