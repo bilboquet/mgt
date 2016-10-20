@@ -9,7 +9,7 @@ find_category() {
 }
 
 usage () {
-    echo "usage: mgt task list -ta--filter <criteria>"
+    echo "usage: mgt task list -ta--filter <criteria> [-i --interactive]"
     echo "       mgt task create -c <category> -t <tag_comma_separated_list> -d <description>"
     echo "       mgt task move --from <category> --to <category> --task <task_id>"
     echo "       mgt task edit -c <category> --task <task_id>"
@@ -39,7 +39,11 @@ case $1 in
                 -f|--filter)
                     keyword=$(echo $2 | sed -s 's/\(.*\)=.*/\1/')
                     value=$(echo $2 | sed -s 's/.*=\(.*\)/\1/')
+                    ### TODO: decide if we want an OR or AND filter
                     grep_filter="$grep_filter -e \"$keyword: .*$value\""
+                    ;;
+                -i|--interactive)
+                    interactive=1
                     ;;
                 *)
                     echo "mgt: task: unknown option '$1'"
@@ -49,8 +53,44 @@ case $1 in
             shift
         done
 
-        cmd="grep -iHr $grep_filter $PROJECT_PATH | sed 's!$PROJECT_PATH/\([^: ]*\):.*!\1!g'"
-        eval $cmd
+        if [ "$grep_filter" == "" ]; then
+            # in case of empty filter, add a "match all" filter
+            grep_filter="-e \"Description: \""
+        fi 
+        cmd="grep -iHr $grep_filter $PROJECT_PATH | sed 's!$PROJECT_PATH/\([^: ]*\):.*!\1!g' | sort -u"
+        eval task_list=\$\($cmd\)
+        
+        for task in $task_list; do
+            grep_filter="Description: "
+            cmd="grep -e $grep_filter $PROJECT_PATH/$task | sed 's!$grep_filter!!'"
+            eval task_details=\$\($cmd\)
+            echo "##" $task": "$task_details
+            if [ ! -z $interactive ]; then
+                while [ true ]; do
+                    echo
+                    echo "(q)uit (n)ext (s)how details self-(a)ssignment"
+                    read input
+                    case $input in
+                        q|quit)
+                            break 2
+                            ;;
+                        ""|n|next)
+                            break
+                            ;;
+                        s|show)
+                            echo "######################################"
+                            cat $PROJECT_PATH/$task
+                            echo "######################################"
+                            ;;
+                        a)
+                            ### TODO
+                            echo "### TODO"
+                        *)
+                            ;;
+                    esac
+                done
+            fi
+        done
         ;;
     create)
         while [ true ]; do
@@ -79,15 +119,18 @@ case $1 in
 
         if [ -z "$category" ]; then
             usage
+            echo "Missing category"
             exit 1
         fi
         if [ -z "$description" ]; then
             usage
+            echo "Missing description"
             exit 1
         fi
 
         task_id=$(expr $(cat $GIT_WTREE/conf.d/task_id) + 1)
         echo -n "$task_id" > $GIT_WTREE/conf.d/task_id
+        mkdir -p "$PROJECT_PATH/$category"
         echo "Task-Id: $task_id" > "$PROJECT_PATH/$category/$task_id"
         echo "Author: $(git config user.name) <$(git config user.email)>" >> "$PROJECT_PATH/$category/$task_id"
         echo "Assignee: None" >> "$PROJECT_PATH/$category/$task_id"
@@ -102,7 +145,7 @@ case $1 in
         if [ $? -ne 0 ]; then
             exit 1
         fi
-        sed -i -e 's/^\s*#.*$/d' "$PROJECT_PATH/$category/$task_id"
+        sed -i -e '/^\s*#.*$/d' "$PROJECT_PATH/$category/$task_id"
         $GIT add "$GIT_WTREE/conf.d/task_id" "$PROJECT_PATH/$category/$task_id"
         $GIT commit -s -m "$(cat $GIT_WTREE/conf.d/project): create: $category/$task_id" -m "$description"
         echo "Task: $category/$task_id created successfully"

@@ -34,3 +34,13 @@ do_test "mgt project init test_proj2"
 
 do_test "mgt project list"
 
+do_test "mgt task list"
+
+do_test "mgt task create"
+
+do_test "mgt task create -c todo"
+
+do_test "mgt task create -c todo -d description"
+
+do_test "mgt task list"
+
