@@ -2,8 +2,6 @@
 #set -x
 PATH=$PATH:$(dirname $0)
 
-. common.sh
-
 usage () {
     echo "usage: mgt init <-h|--help> -r <remote>"
     echo "       mgt project <-h|--help|init|list|select|sync> ..."
@@ -35,13 +33,27 @@ case $1 in
             shift
         done
 
-        mkdir -p $GIT_WTREE/conf.d
-        mkdir -p $GIT_WTREE/project
+	touch ~/.mgtconfig
+	echo '### Do not modify' >> ~/.mgtconfig
+	echo '### Variables' >> ~/.mgtconfig
+	echo 'MGT_PATH=~/.mgt' >> ~/.mgtconfig
+	echo 'MGT_CONF_PATH=$MGT_PATH/conf.d' >> ~/.mgtconfig
+	echo 'MGT_PROJECT_PATH=$MGT_PATH/project' >> ~/.mgtconfig
+	echo '### Commands' >> ~/.mgtconfig
+	echo 'GIT="git --work-tree=$MGT_PATH --git-dir=$MGT_PATH/.git"' >> ~/.mgtconfig
+
+	. ~/.mgtconfig
+
+	echo " * Create $MGT_PATH and subdirectories..."
+        mkdir -p $MGT_PATH/conf.d
+        mkdir -p $MGT_PATH/project
+	echo "Tutorial mgt" > $MGT_PATH/README
         $GIT init
-        echo "mgt: project management" > $GIT_WTREE/.git/description
+        echo "mgt: project management" > $MGT_PATH/.git/description
         $GIT add .
         $GIT commit -s -m "Project: create project management repository"
         if [ ! -z "$remote" ]; then
+	    echo " * Use remote $remote"
             $GIT remote remove origin
             $GIT remote add origin $remote
             $GIT push origin master

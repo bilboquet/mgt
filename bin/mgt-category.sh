@@ -1,11 +1,13 @@
 #!/bin/bash
+# Manage the category of your task
+# Note: the categories are used in the workflow
 
-GIT_WTREE=~/.mgt
-PROJECT_PATH=$GIT_WTREE/project
+. ~/.mgtconfig
 
 usage () {
     echo "usage: mgt category list"
     echo "       mgt category create <category>"
+    echo "       mgt category remove <category>"
     echo "       mgt category --help"
 }
 
@@ -15,12 +17,19 @@ fi
 
 case $1 in
     list)
-                tree --noreport -d $PROJECT_PATH
+	echo "mgt: categories"
+	echo "category:label:default"
+	cat $MGT_CONF_PATH/categories
         ;;
     create)
-                shift
-        mkdir -p $PROJECT_PATH/$1
-                ;;
+        shift
+        mkdir -p $MGT_PROJECT_PATH/$1
+        echo $1 >> $MGT_CONF_PATH/categories
+        ;;
+    remove)
+        shift
+        sed -i "'/$1/d'" $MGT_CONF_PATH/categories
+        ;;
     --help|-h)
         usage
         exit 0

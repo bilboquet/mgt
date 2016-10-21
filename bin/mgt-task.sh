@@ -1,11 +1,10 @@
 #!/bin/bash
 
-. common.sh
-PROJECT_PATH=$GIT_WTREE/project
+. ~/.mgtconfig
 
 find_category() {
     ### $1 = task_id
-    return find $PROJECT_PATH -name $1 -printf %P | tr -s '/' ' ' | cut -f1 -d' '
+    return find $MGT_PROJECT_PATH -name $1 -printf %P | tr -s '/' ' ' | cut -f1 -d' '
 }
 
 usage () {
@@ -61,12 +60,12 @@ case $1 in
             # in case of empty filter, add a "match all" filter
             grep_filter="-e \"Description: \""
         fi 
-        cmd="grep -iHr $grep_filter $PROJECT_PATH | sed 's!$PROJECT_PATH/\([^: ]*\):.*!\1!g' | sort -u"
+        cmd="grep -iHr $grep_filter $MGT_PROJECT_PATH | sed 's!$MGT_PROJECT_PATH/\([^: ]*\):.*!\1!g' | sort -u"
         eval task_list=\$\($cmd\)
         
         for task in $task_list; do
             grep_filter="Description: "
-            cmd="grep -e $grep_filter $PROJECT_PATH/$task | sed 's!$grep_filter!!'"
+            cmd="grep -e $grep_filter $MGT_PROJECT_PATH/$task | sed 's!$grep_filter!!'"
             eval task_details=\$\($cmd\)
             echo "##" $task": "$task_details
             if [ ! -z $interactive ]; then
@@ -84,14 +83,14 @@ case $1 in
                             ;;
                         s|show)
                             echo "######################################"
-                            cat $PROJECT_PATH/$task
+                            cat $MGT_PROJECT_PATH/$task
                             echo "######################################"
                             ;;
                         a)
                             mgt task assign -c ${task%/*} --task ${task##*/} -u "$(git config user.name) <$(git config user.email)>"
                             ;;
                         h|history)
-                            $GIT log $PROJECT_PATH/$task
+                            $GIT log $MGT_PROJECT_PATH/$task
                             ;;
                         *)
                             ;;
@@ -134,26 +133,26 @@ case $1 in
             exit 1
         fi
 
-        task_id=$(expr $(cat $GIT_WTREE/conf.d/task_id) + 1)
-        echo -n "$task_id" > $GIT_WTREE/conf.d/task_id
-        mkdir -p "$PROJECT_PATH/$category"
-        echo "Task-Id: $task_id" > "$PROJECT_PATH/$category/$task_id"
-        echo "Author: $(git config user.name) <$(git config user.email)>" >> "$PROJECT_PATH/$category/$task_id"
-        echo "Assignee: None" >> "$PROJECT_PATH/$category/$task_id"
-        echo "Date: $(date)" >> "$PROJECT_PATH/$category/$task_id"
-        echo "Estimation: None" >> "$PROJECT_PATH/$category/$task_id"
-        echo "Remaining: None" >> "$PROJECT_PATH/$category/$task_id"
-        echo "Tags: $tag" >> "$PROJECT_PATH/$category/$task_id"
-        echo "Description: $description" >> "$PROJECT_PATH/$category/$task_id"
-        echo "" >> "$PROJECT_PATH/$category/$task_id"
-        echo "# Long description" >> "$PROJECT_PATH/$category/$task_id"
-        $EDITOR "$PROJECT_PATH/$category/$task_id"
+        task_id=$(expr $(cat $MGT_CONF_PATH/task_id) + 1)
+        echo -n "$task_id" > $MGT_CONF_PATH/task_id
+        mkdir -p "$MGT_PROJECT_PATH/$category"
+        echo "Task-Id: $task_id" > "$MGT_PROJECT_PATH/$category/$task_id"
+        echo "Author: $(git config user.name) <$(git config user.email)>" >> "$MGT_PROJECT_PATH/$category/$task_id"
+        echo "Assignee: None" >> "$MGT_PROJECT_PATH/$category/$task_id"
+        echo "Date: $(date)" >> "$MGT_PROJECT_PATH/$category/$task_id"
+        echo "Estimation: None" >> "$MGT_PROJECT_PATH/$category/$task_id"
+        echo "Remaining: None" >> "$MGT_PROJECT_PATH/$category/$task_id"
+        echo "Tags: $tag" >> "$MGT_PROJECT_PATH/$category/$task_id"
+        echo "Description: $description" >> "$MGT_PROJECT_PATH/$category/$task_id"
+        echo "" >> "$MGT_PROJECT_PATH/$category/$task_id"
+        echo "# Long description" >> "$MGT_PROJECT_PATH/$category/$task_id"
+        $EDITOR "$MGT_PROJECT_PATH/$category/$task_id"
         if [ $? -ne 0 ]; then
             exit 1
         fi
-        sed -i -e '/^\s*#.*$/d' "$PROJECT_PATH/$category/$task_id"
-        $GIT add "$GIT_WTREE/conf.d/task_id" "$PROJECT_PATH/$category/$task_id"
-        $GIT commit -s -m "$(cat $GIT_WTREE/conf.d/project): create: $category/$task_id" -m "$description"
+        sed -i -e '/^\s*#.*$/d' "$MGT_PROJECT_PATH/$category/$task_id"
+        $GIT add "$MGT_CONF_PATH/task_id" "$MGT_PROJECT_PATH/$category/$task_id"
+        $GIT commit -s -m "$(cat $MGT_CONF_PATH/project): create: $category/$task_id" -m "$description"
         echo "Task: $category/$task_id created successfully"
         ;;
     move)
@@ -190,21 +189,21 @@ case $1 in
             exit 1
         fi
 
-        if [ ! -d "$PROJECT_PATH/$from" ]; then
+        if [ ! -d "$MGT_PROJECT_PATH/$from" ]; then
             echo "mgt: category: '$from' does not exists."
             exit 1
         fi
-        if [ ! -d "$PROJECT_PATH/$to" ]; then
+        if [ ! -d "$MGT_PROJECT_PATH/$to" ]; then
             echo "mgt: category: '$to' does not exists."
             exit 1
         fi
-        if [ ! -f "$PROJECT_PATH/$from/$task_id" ]; then
+        if [ ! -f "$MGT_PROJECT_PATH/$from/$task_id" ]; then
             echo "mgt: task: '$from/$task_id' does not exists."
             exit 1
         fi
 
-        $GIT mv "$PROJECT_PATH/$from/$task_id" "$PROJECT_PATH/$to"
-        $GIT commit -s -m "$(cat $GIT_WTREE/conf.d/project): move: '$from/$task_id' => '$to/$task_id'"
+        $GIT mv "$MGT_PROJECT_PATH/$from/$task_id" "$MGT_PROJECT_PATH/$to"
+        $GIT commit -s -m "$(cat $MGT_CONF_PATH/project): move: '$from/$task_id' => '$to/$task_id'"
         ;;
     edit)
         while [ true ]; do
@@ -228,18 +227,18 @@ case $1 in
             shift
         done
 
-        if [ ! -d "$PROJECT_PATH/$category" ]; then
+        if [ ! -d "$MGT_PROJECT_PATH/$category" ]; then
             echo "mgt: category: '$category' does not exists."
             exit 1
         fi
-        if [ ! -f "$PROJECT_PATH/$category/$task_id" ]; then
+        if [ ! -f "$MGT_PROJECT_PATH/$category/$task_id" ]; then
             echo "mgt: task: '$category/$task_id' does not exists."
             exit 1
         fi
 
-        $EDITOR "$PROJECT_PATH/$category/$task_id"
-        $GIT add "$PROJECT_PATH/$category/$task_id"
-        $GIT commit -s -m "$(cat $GIT_WTREE/conf.d/project): edit: $category/$task_id"
+        $EDITOR "$MGT_PROJECT_PATH/$category/$task_id"
+        $GIT add "$MGT_PROJECT_PATH/$category/$task_id"
+        $GIT commit -s -m "$(cat $MGT_CONF_PATH/project): edit: $category/$task_id"
         ;;
     rm)
         while [ true ]; do
@@ -263,17 +262,17 @@ case $1 in
             shift
         done
 
-        if [ ! -d "$PROJECT_PATH/$category" ]; then
+        if [ ! -d "$MGT_PROJECT_PATH/$category" ]; then
             echo "mgt: category: '$category' does not exists."
             exit 1
         fi
 
-        if [ ! -f "$PROJECT_PATH/$category/$task_id" ]; then
+        if [ ! -f "$MGT_PROJECT_PATH/$category/$task_id" ]; then
             echo "mgt: task: '$category/$task_id' does not exists."
             exit 1
         fi
-        $GIT rm "$PROJECT_PATH/$category/$task_id"
-        $GIT commit -s -m "$(cat $GIT_WTREE/conf.d/project): remove: $category/$task_id"
+        $GIT rm "$MGT_PROJECT_PATH/$category/$task_id"
+        $GIT commit -s -m "$(cat $MGT_CONF_PATH/project): remove: $category/$task_id"
         ;;
     assign)
         while [ true ]; do
@@ -300,18 +299,18 @@ case $1 in
             shift
         done
 
-        if [ ! -d "$PROJECT_PATH/$category" ]; then
+        if [ ! -d "$MGT_PROJECT_PATH/$category" ]; then
             echo "mgt: task: category '$category' not found"
             exit 1
         fi
-        if [ ! -f "$PROJECT_PATH/$category/$task_id" ]; then
+        if [ ! -f "$MGT_PROJECT_PATH/$category/$task_id" ]; then
             echo "mgt: task: '$task_id' not found"
             exit 1
         fi
 
-        sed -i "s/Assignee:\(.*\)/Assignee: $username/" $PROJECT_PATH/$category/$task_id
-        $GIT add "$PROJECT_PATH/$category/$task_id"
-        $GIT commit -s -m "$(cat $GIT_WTREE/conf.d/project): assign: $category/$task_id to $username"
+        sed -i "s/Assignee:\(.*\)/Assignee: $username/" $MGT_PROJECT_PATH/$category/$task_id
+        $GIT add "$MGT_PROJECT_PATH/$category/$task_id"
+        $GIT commit -s -m "$(cat $MGT_CONF_PATH/project): assign: $category/$task_id to $username"
         ;;
     tag)
         ### TODO: Edit task file
