@@ -25,9 +25,9 @@ case $1 in
                     shift #consume -r
                     shift #consume remote
                     ;;
-		        -n|--new)
-		            new=yes
-		            ;;
+                -n|--new)
+                    new=yes
+                    ;;
                 *)
                     echo "mgt: unknown option '$1'"
                     break
@@ -36,57 +36,57 @@ case $1 in
             shift
         done
 
-	    touch ~/.mgtconfig
-	    echo '### Do not modify' >> ~/.mgtconfig
-	    echo '### Variables' >> ~/.mgtconfig
-	    echo 'MGT_PATH=~/.mgt' >> ~/.mgtconfig
-	    echo 'MGT_CONF_PATH=$MGT_PATH/conf.d' >> ~/.mgtconfig
-	    echo 'MGT_PROJECT_PATH=$MGT_PATH/project' >> ~/.mgtconfig
-	    echo '### Commands' >> ~/.mgtconfig
-	    echo 'GIT="git --work-tree=$MGT_PATH --git-dir=$MGT_PATH/.git"' >> ~/.mgtconfig
+        touch ~/.mgtconfig
+        echo '### Do not modify' >> ~/.mgtconfig
+        echo '### Variables' >> ~/.mgtconfig
+        echo 'MGT_PATH=~/.mgt' >> ~/.mgtconfig
+        echo 'MGT_CONF_PATH=$MGT_PATH/conf.d' >> ~/.mgtconfig
+        echo 'MGT_PROJECT_PATH=$MGT_PATH/project' >> ~/.mgtconfig
+        echo '### Commands' >> ~/.mgtconfig
+        echo 'GIT="git --work-tree=$MGT_PATH --git-dir=$MGT_PATH/.git"' >> ~/.mgtconfig
 
-	    . ~/.mgtconfig
+        . ~/.mgtconfig
 
-	    if [ -z "$new" ]; then
+        if [ -z "$new" ]; then
             mkdir -p $MGT_PATH/conf.d
             mkdir -p $MGT_PATH/project
-	        echo "mgt repository" > $MGT_PATH/README
+            echo "mgt repository" > $MGT_PATH/README
             $GIT init
             echo "mgt: project management" > $MGT_PATH/.git/description
             $GIT add .
             $GIT commit -s -m "Project: create project management repository"
             if [ ! -z "$remote" ]; then
-		        $GIT remote remove origin
-		        $GIT remote add origin $remote
-		        $GIT push origin master
+                $GIT remote remove origin
+                $GIT remote add origin $remote
+                $GIT push origin master
             fi
-	    else
+        else
             if [ ! -z "$remote" ]; then
-	            git clone $remote ~/.mgt
+                git clone $remote ~/.mgt
             else
                 echo " *** You specified a not new remote: --remote is then mandatory..."
                 echo ""
                 usage
                 exit 1
             fi
-	    fi
-	    ;;
+        fi
+        ;;
     project)
         shift
         mgt-project.sh $@
-	    ;;
+        ;;
     task)
         shift
         mgt-task.sh $@
-	    ;;
+        ;;
     category)
         shift
         mgt-category.sh $@
-	    ;;
+        ;;
     config)
         shift
         mgt-config.sh $@
-	    ;;
+        ;;
     -h|--help)
         usage
         ;;
