@@ -50,3 +50,5 @@ do_test "mgt task list"
 
 seq=$'s\nh\na\nh\nq'
 do_test "mgt task list -i" "$seq"
+
+do_test "mgt task list -f Assignee=Jean"
