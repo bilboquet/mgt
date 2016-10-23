@@ -143,6 +143,8 @@ case $1 in
         echo "Estimation: None" >> "$MGT_PROJECT_PATH/$category/$task_id"
         echo "Remaining: None" >> "$MGT_PROJECT_PATH/$category/$task_id"
         echo "Tags: $tag" >> "$MGT_PROJECT_PATH/$category/$task_id"
+        echo "Depends: " >> "$MGT_PROJECT_PATH/$category/$task_id"
+        echo "Blocks: " >> "$MGT_PROJECT_PATH/$category/$task_id"
         echo "Description: $description" >> "$MGT_PROJECT_PATH/$category/$task_id"
         echo "" >> "$MGT_PROJECT_PATH/$category/$task_id"
         echo "# Long description" >> "$MGT_PROJECT_PATH/$category/$task_id"
