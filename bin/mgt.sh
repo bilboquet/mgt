@@ -22,8 +22,7 @@ case $1 in
             case $1 in
                 -r|--remote)
                     remote=$2
-                    shift #consume -r
-                    shift #consume remote
+                    shift #consume param remote
                     ;;
                 -n|--new)
                     new=yes
@@ -33,21 +32,25 @@ case $1 in
                     break
                     ;;
             esac
-            shift
+            shift #next arg
         done
 
-        touch ~/.mgtconfig
-        echo '### Do not modify' >> ~/.mgtconfig
-        echo '### Variables' >> ~/.mgtconfig
-        echo 'MGT_PATH=~/.mgt' >> ~/.mgtconfig
-        echo 'MGT_CONF_PATH=$MGT_PATH/conf.d' >> ~/.mgtconfig
-        echo 'MGT_PROJECT_PATH=$MGT_PATH/project' >> ~/.mgtconfig
-        echo '### Commands' >> ~/.mgtconfig
-        echo 'GIT="git --work-tree=$MGT_PATH --git-dir=$MGT_PATH/.git"' >> ~/.mgtconfig
+        if [ ! -e ~/.mgtconfig ]; then 
+            touch ~/.mgtconfig
+            echo '### Do not modify' >> ~/.mgtconfig
+            echo '### Variables' >> ~/.mgtconfig
+            echo 'MGT_PATH=~/.mgt' >> ~/.mgtconfig
+            echo 'MGT_CONF_PATH=$MGT_PATH/conf.d' >> ~/.mgtconfig
+            echo 'MGT_PROJECT_PATH=$MGT_PATH/project' >> ~/.mgtconfig
+            echo '### Commands' >> ~/.mgtconfig
+            echo 'GIT="git --work-tree=$MGT_PATH --git-dir=$MGT_PATH/.git"' >> ~/.mgtconfig
+        else
+            echo "~/.mgtconfig already exists, won't modify it."
+        fi
 
         . ~/.mgtconfig
 
-        if [ -z "$new" ]; then
+        if [ ! -z "$new" ]; then
             mkdir -p $MGT_PATH/conf.d
             mkdir -p $MGT_PATH/project
             echo "mgt repository" > $MGT_PATH/README
@@ -62,7 +65,7 @@ case $1 in
             fi
         else
             if [ ! -z "$remote" ]; then
-                git clone $remote ~/.mgt
+                git clone $remote $MGT_PATH
             else
                 echo " *** You specified a not new remote: --remote is then mandatory..."
                 echo ""

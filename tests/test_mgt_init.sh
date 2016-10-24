@@ -1,30 +1,39 @@
 #!/bin/bash
 #set -x
-PATH=$PATH:$(dirname $0)/../bin
+export PATH=$PATH:"$(dirname $0)/../bin"
+
+if [ ! -e ~/.mgtconfig ]; then
+    mgt init --new
+fi
+
+sed -i -e 's#MGT_PATH=~/.mgt.*#MGT_PATH=~/.mgt-test#' ~/.mgtconfig
+. ~/.mgtconfig
 
 do_test () {
-    echo "##### $1"
+    echo -n "##### $1"
     if [ $# -eq 1 ]; then
+        echo
         $1
     else
+        echo $2
         $1 <<< "$2"
     fi
     echo
 }
 
-echo "###############################################"
-echo "#### Warning, this test will corrupt ~/.mgt ####"
-echo "###############################################"
-echo "Press enter to continue"
+echo "##################################################"
+echo "#### Warning, this test will remove $MGT_PATH ####"
+echo "##################################################"
+echo "Press enter to continue or C^c to quit"
 read
 
-do_test "rm -rf ~/.mgt"
-rm -rf ~/.mgt
+do_test "rm -rf $MGT_PATH"
+rm -rf $MGT_PATH
 
 do_test "mgt init -r https://github.com/bilboquet/test.git"
 
-do_test "rm -rf ~/.mgt"
-rm -rf ~/.mgt
+do_test "rm -rf $MGT_PATH"
+rm -rf $MGT_PATH
 
 do_test "mgt init"
 
@@ -52,3 +61,8 @@ seq=$'s\nh\na\nh\nq'
 do_test "mgt task list -i" "$seq"
 
 do_test "mgt task list -f Assignee=Jean"
+
+
+
+
+sed -i -e 's#MGT_PATH=~/.mgt-test.*#MGT_PATH=~/.mgt#' ~/.mgtconfig

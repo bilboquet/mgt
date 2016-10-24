@@ -1,6 +1,10 @@
 #!/bin/bash
 
-. ~/.mgtconfig
+if [ -e ~/.mgtconfig ]; then
+    . ~/.mgtconfig
+else
+    mgt -h
+fi
 
 usage () {
     echo "usage: mgt project init <name>"
@@ -43,7 +47,7 @@ case $1 in
             echo "Project <name> cannot be empty"
             exit 1
         fi
-        git --work-tree=$MGT_PATH --git-dir=$MGT_PATH/.git checkout -b "$1"
+        $GIT checkout -b "$1"
         if [ $? -ne 0 ]; then
             exit 1
         fi
@@ -52,26 +56,26 @@ case $1 in
         echo -n "$(whoami)" > $MGT_CONF_PATH/owner
         create_initial_tags $MGT_CONF_PATH/tags
         create_initial_users $MGT_CONF_PATH/users
-	create_initial_categories $MGT_CONF_PATH/categories
+        create_initial_categories $MGT_CONF_PATH/categories
         echo -n "0" >  $MGT_CONF_PATH/task_id
-        git --work-tree=$MGT_PATH --git-dir=$MGT_PATH/.git add .
-        git --work-tree=$MGT_PATH --git-dir=$MGT_PATH/.git commit -s -m "Project: create project '$1'"
+        $GIT add .
+        $GIT commit -s -m "Project: create project '$1'"
         ;;
     list)
-        git --git-dir=$MGT_PATH/.git branch -l | grep -v master
+        $GIT branch -l | grep -v master
         ;;
     select)
-        git --git-dir=$MGT_PATH/.git checkout "$1"
-        $remote = $(git remote | grep origin)
+        $GIT checkout "$1"
+        $remote = $($GIT remote | grep origin)
         if [ ! -z "$remote" ]; then
-            git --git-dir=$MGT_PATH/.git --work-dir=$MGT_PATH pull --rebase
+            $GIT pull --rebase
         fi
         ;;
     sync)
-        $remote = $(git remote | grep origin)
+        $remote = $($GIT remote | grep origin)
         if [ ! -z "$remote" ]; then
-            git --git-dir=$MGT_PATH/.git --work-dir=$MGT_PATH pull --rebase
-            git --git-dir=$MGT_PATH/.git push
+            $GIT pull --rebase
+            $GIT push
         fi
         ;;
     *)
