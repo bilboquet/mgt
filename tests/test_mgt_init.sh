@@ -83,6 +83,12 @@ do_test "mgt task list -f Assignee=Jean"
 
 do_test "mgt project sync"
 
+do_test "mgt project select test_proj1"
+
+do_test "mgt task create -c todo -d description"
+
+do_test "mgt project sync"
+
 
 ### end of tests
 sed -i -e 's#MGT_PATH=~/.mgt-test.*#MGT_PATH=~/.mgt#' ~/.mgtconfig

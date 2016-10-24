@@ -65,6 +65,7 @@ case $1 in
         $GIT branch -l | grep -v master
         ;;
     select)
+        shift
         $GIT checkout "$1"
         remote=$($GIT remote | grep origin)
         if [ ! -z "$remote" ]; then
