@@ -9,7 +9,12 @@ fi
 sed -i -e 's#MGT_PATH=~/.mgt.*#MGT_PATH=~/.mgt-test#' ~/.mgtconfig
 . ~/.mgtconfig
 
+
+
 do_test () {
+    if [ "$1" == "-i" ]; then
+        shift
+    fi
     echo -n "##### $1"
     if [ $# -eq 1 ]; then
         echo
@@ -20,6 +25,8 @@ do_test () {
     fi
     echo
 }
+
+
 
 echo "##################################################"
 echo "#### Warning, this test will remove $MGT_PATH ####"
@@ -36,6 +43,18 @@ do_test "rm -rf $MGT_PATH"
 rm -rf $MGT_PATH
 
 do_test "mgt init"
+
+do_test "mgt init --new"
+
+do_test "rm -rf $MGT_PATH"
+rm -rf $MGT_PATH
+
+do_test "mgt init --new -r https://github.com/bilboquet/test.git"
+
+do_test "rm -rf $MGT_PATH"
+rm -rf $MGT_PATH
+
+do_test "mgt init -n -r https://github.com/bilboquet/test.git --force"
 
 do_test "mgt project init"
 
@@ -62,7 +81,8 @@ do_test "mgt task list -i" "$seq"
 
 do_test "mgt task list -f Assignee=Jean"
 
+do_test "mgt project sync"
 
 
-
+### end of tests
 sed -i -e 's#MGT_PATH=~/.mgt-test.*#MGT_PATH=~/.mgt#' ~/.mgtconfig

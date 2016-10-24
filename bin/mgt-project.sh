@@ -66,16 +66,16 @@ case $1 in
         ;;
     select)
         $GIT checkout "$1"
-        $remote = $($GIT remote | grep origin)
+        remote=$($GIT remote | grep origin)
         if [ ! -z "$remote" ]; then
             $GIT pull --rebase
         fi
         ;;
     sync)
-        $remote = $($GIT remote | grep origin)
+        remote=$($GIT remote | grep origin)
         if [ ! -z "$remote" ]; then
-            $GIT pull --rebase
-            $GIT push
+            $GIT pull --rebase origin master
+            $GIT push --mirror
         fi
         ;;
     *)

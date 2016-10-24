@@ -3,7 +3,7 @@
 PATH=$PATH:$(dirname $0)
 
 usage () {
-    echo "usage: mgt init <-h|--help> --new -r <remote>"
+    echo "usage: mgt init <-h|--help> -n|--new -r|--remote <remote> [--force]"
     echo "       mgt project <-h|--help|init|list|select|sync> ..."
     echo "       mgt task <-h|--help|create|move|edit||comment|tag|rm|filter> ..."
     echo "       mgt category <-h|--help|create|edit|rm|filter> ..."
@@ -26,6 +26,9 @@ case $1 in
                     ;;
                 -n|--new)
                     new=yes
+                    ;;
+                --force)
+                    force=$1
                     ;;
                 *)
                     echo "mgt: unknown option '$1'"
@@ -59,9 +62,14 @@ case $1 in
             $GIT add .
             $GIT commit -s -m "Project: create project management repository"
             if [ ! -z "$remote" ]; then
+                if [ -z "$force" ]; then
+                    echo -n "You use --new combined with --remote without "
+                    echo -n "--force. <remote> won't be overwritten which "
+                    echo "is safe but may result in an error."
+                fi
                 $GIT remote remove origin
                 $GIT remote add origin $remote
-                $GIT push origin master
+                $GIT push "$force" origin master
             fi
         else
             if [ ! -z "$remote" ]; then
