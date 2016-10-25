@@ -59,6 +59,14 @@ usage_task_view() {
     echo "    -c,--category <category> Category of the view"
 }
 
+usage_task_depends() {
+    echo "usage: mgt task depends --on 'dependency_task' --task 'task'"
+    echo "  Options:"
+    echo "    -c,--category <category>  Category of the view"
+    echo "    -t,--task <task>          Task that has a dependency"
+    echo "    -o,--on   <task>          The blocking task (only the 'task_id')"
+}
+
 if [ -z "$1" ]; then
     usage_task
 fi
@@ -361,6 +369,7 @@ case $1 in
         ;;
 
     assign)
+        shift
         argv=$(getopt -o c:t:u: -l category:,task:,username: -- "$@")
         eval set -- "$argv"
         while [ true ]; do
@@ -372,7 +381,7 @@ case $1 in
                 -t|--task)
                     task_id="$2"
                     ;;
-                -u|---username)
+                -u|--username)
                     username="$2"
                     break
                     ;;
@@ -402,6 +411,56 @@ case $1 in
         $GIT commit -s -m "$(cat $MGT_CONF_PATH/project): assign: $category/$task_id to $username"
         ;;
 
+    depends)
+        shift
+        argv=$(getopt -o c:t:o: -l category:,task:,on: -- "$@")
+        eval set -- "$argv"
+        while [ true ]; do
+            ### TODO: Validate arguments
+            case "$1" in
+                -c|--category)
+                    category="$2"
+                    ;;
+                -t|--task)
+                    task_id="$2"
+                    ;;
+                -o|--on)
+                    dep="$2"
+                    ;;
+                --)
+                    shift
+                    break
+                    ;;
+                *)
+                    usage_task_depends
+                    break
+                    ;;
+            esac
+            shift 2
+        done
+
+        if [ ! -d "$MGT_PROJECT_PATH/$category" ]; then
+            echo "mgt: task: '$category' not found"
+            exit 1
+        fi
+        if [ ! -f "$MGT_PROJECT_PATH/$category/$task" ]; then
+            echo "mgt: task: '$task' not found"
+            exit 1
+        fi
+
+        deps=$(grep -e 'Depends: None')
+        if [ -z "$deps" ]; then
+            deps=$(grep -e 'Depends: ' | grep $on)
+            if [ -z "$deps" ]; then
+                sed -i "s!Depends: \(.*\)$!Depends: \1, $on!" $MGT_PROJECT_PATH/$category/$task_id
+            fi
+        else
+            sed -i "s!Depends: None!Depends: $on!" $MGT_PROJECT_PATH/$category/$task_id
+        fi
+        $GIT add "$MGT_PROJECT_PATH/$category/$task_id"
+        $GIT commit -s -m "$(cat $MGT_CONF_PATH/project): depends: $category/$task_id depends on $on"        
+        ;;
+
     tag)
         ### TODO: Edit task file
         ;;
@@ -415,7 +474,7 @@ case $1 in
         ;;
 
     comment)
-        ### TODO: use git-note
+        ### TODO: use git-notes
         ;;
 
     *)
