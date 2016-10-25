@@ -49,14 +49,14 @@ usage_task_edit() {
     echo "usage: mgt task edit <options>"
     echo "  Options:"
     echo "    -t,--task <task_id>      Task to edit"
-    echo "    -c,--category <category> Category of the task"
+    echo "    -c,--category <category> Category of the task to edit"
 }
 
 usage_task_view() {
     echo "usage: mgt task view <options>"
     echo "  Options:"
     echo "    -t,--task <task_id>      Task to view"
-    echo "    -c,--category <category> Category of the view"
+    echo "    -c,--category <category> Category of the task to view"
 }
 
 usage_task_depends() {
@@ -65,6 +65,22 @@ usage_task_depends() {
     echo "    -c,--category <category>  Category of the view"
     echo "    -t,--task <task>          Task that has a dependency"
     echo "    -o,--on   <task>          The blocking task (only the 'task_id')"
+}
+
+usage_task_estimate() {
+    echo "usage: mgt task estimate <options>"
+    echo "  Options:"
+    echo "    -t,--task <task_id>      Task to estimate"
+    echo "    -c,--category <category> Category of the task"
+    echo "    -e,--estimation <value>  Task estimation"
+}
+
+usage_task_remaining() {
+    echo "usage: mgt task remaining <options>"
+    echo "  Options:"
+    echo "    -t,--task <task_id>      Task to estimate the remaining"
+    echo "    -c,--category <category> Category of the task"
+    echo "    -r,--remaining <value>   Task estimation of the remaining"
 }
 
 if [ -z "$1" ]; then
@@ -236,7 +252,6 @@ case $1 in
         echo "Remaining: None" >> "$MGT_PROJECT_PATH/$category/$task_id"
         echo "Tags: $tags" >> "$MGT_PROJECT_PATH/$category/$task_id"
         echo "Depends: None" >> "$MGT_PROJECT_PATH/$category/$task_id"
-        echo "Blocks: None" >> "$MGT_PROJECT_PATH/$category/$task_id"
         echo "Description: $description" >> "$MGT_PROJECT_PATH/$category/$task_id"
         echo "" >> "$MGT_PROJECT_PATH/$category/$task_id"
         echo "# Long description" >> "$MGT_PROJECT_PATH/$category/$task_id"
@@ -466,11 +481,89 @@ case $1 in
         ;;
 
     estimate)
-        ### TODO: Edit task file
+        shift
+        argv=$(getopt -o c:t:e: -l category:,task:,estimation: -- "$@")
+        eval set -- "$argv"
+        while [ true ]; do
+            ### TODO: Validate arguments
+            case "$1" in
+                -c|--category)
+                    category="$2"
+                    ;;
+                -t|--task)
+                    task_id="$2"
+                    ;;
+                -e|--estimation)
+                    estimation="$2"
+                    break
+                    ;;
+                --)
+                    shift
+                    break
+                    ;;
+                *)
+                    usage_task_estimate
+                    break
+                    ;;
+            esac
+            shift 2
+        done
+
+        if [ ! -d "$MGT_PROJECT_PATH/$category" ]; then
+            echo "mgt: task: category '$category' not found"
+            exit 1
+        fi
+        if [ ! -f "$MGT_PROJECT_PATH/$category/$task_id" ]; then
+            echo "mgt: task: '$task_id' not found"
+            exit 1
+        fi
+
+        sed -i "s/Estimation:\(.*\)/Estimation: $estimation/" $MGT_PROJECT_PATH/$category/$task_id
+        $GIT add "$MGT_PROJECT_PATH/$category/$task_id"
+        $GIT commit -s -m "$(cat $MGT_CONF_PATH/project): estimation: Estimate for $category/$task_id is $estimation"
         ;;
 
     remaining)
-        ### TODO: Edit task file
+        shift
+        argv=$(getopt -o c:t:r: -l category:,task:,remaining: -- "$@")
+        eval set -- "$argv"
+        while [ true ]; do
+            ### TODO: Validate arguments
+            case "$1" in
+                -c|--category)
+                    category="$2"
+                    ;;
+                -t|--task)
+                    task_id="$2"
+                    ;;
+                -r|--remaining)
+                    remaining="$2"
+                    break
+                    ;;
+                --)
+                    shift
+                    break
+                    ;;
+                *)
+                    usage_task_remaining
+                    break
+                    ;;
+            esac
+            shift 2
+        done
+
+        if [ ! -d "$MGT_PROJECT_PATH/$category" ]; then
+            echo "mgt: task: category '$category' not found"
+            exit 1
+        fi
+        if [ ! -f "$MGT_PROJECT_PATH/$category/$task_id" ]; then
+            echo "mgt: task: '$task_id' not found"
+            exit 1
+        fi
+
+        sed -i "s/Remaining:\(.*\)/Remaining: $remaining/" $MGT_PROJECT_PATH/$category/$task_id
+        $GIT add "$MGT_PROJECT_PATH/$category/$task_id"
+        $GIT commit -s -m "$(cat $MGT_CONF_PATH/project): remaining: Remaining for $category/$task_id is $remaining"
         ;;
 
     comment)
