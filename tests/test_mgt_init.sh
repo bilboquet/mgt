@@ -14,14 +14,24 @@ sed -i -e 's#MGT_PATH=~/.mgt.*#MGT_PATH=~/.mgt-test#' ~/.mgtconfig
 do_test () {
     if [ "$1" == "-i" ]; then
         shift
+        interactive=true
     fi
+    
     echo -n "##### $1"
     if [ $# -eq 1 ]; then
         echo
-        $1
+        if [ ! interactve ]; then
+            $($1)
+        else
+            $1
+        fi
     else
         echo $2
-        $1 <<< "$2"
+        if [ ! interactve ]; then
+            $($1 <<< "$2")
+        else
+            $1 <<< "$2"
+        fi
     fi
     echo
 }
@@ -72,7 +82,7 @@ do_test "mgt task create"
 
 do_test "mgt task create -c todo"
 
-do_test "mgt task create -c todo -d description"
+do_test "-i" "mgt task create -c todo -d description"
 
 do_test "mgt task list"
 
