@@ -67,7 +67,7 @@ case "$1" in
 
         . ~/.mgtconfig
 
-        if [ ! -z "$new" ]; then
+        if [ "$new" == "y" ]; then
             mkdir -p $MGT_PATH/conf.d
             mkdir -p $MGT_PATH/project
             echo "mgt repository" > $MGT_PATH/README
@@ -77,14 +77,15 @@ case "$1" in
             $GIT add .
             $GIT commit -s -m "Project: create project management repository"
             if [ ! -z "$remote" ]; then
-                if [ -z "$force" ]; then
+                if [ ! "$force" == "-f" ]; then
                     echo -n "You use --new combined with --remote without "
                     echo -n "--force. <remote> won't be overwritten which "
                     echo "is safe but may result in an error."
+                    unset force #if $force != '-f' then force has to be empty
                 fi
                 $GIT remote remove origin
                 $GIT remote add origin $remote
-                $GIT push "$force" origin master
+                $GIT push $force origin master
             fi
         else
             if [ ! -z "$remote" ]; then
@@ -95,7 +96,7 @@ case "$1" in
             else
                 echo " *** You specified a not new remote: --remote is then mandatory..."
                 echo ""
-                usage
+                usage_mgt
                 exit 1
             fi
         fi

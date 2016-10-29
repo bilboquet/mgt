@@ -12,7 +12,7 @@ find_category() {
 }
 
 usage_task () {
-    echo "usage: mgt task grep [--filter <criteria>] [-i --interactive]"
+    echo "usage: mgt task search [--filter <criteria>] [-i --interactive]"
     echo "       mgt task add [-c <category=todo>] [-T <tag_comma_separated_list>] -d <description>"
     echo "       mgt task mv --from <category> --to <category> --task <task_id>"
     echo "       mgt task edit -c <category> --task <task_id>"

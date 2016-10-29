@@ -92,7 +92,7 @@ case $1 in
         break
         ;;
     *)
-        usage
+        usage_project
         exit 1
         ;;
 esac
