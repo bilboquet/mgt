@@ -83,6 +83,60 @@ usage_task_remaining() {
     echo "    -r,--remaining <value>   Task estimation of the remaining"
 }
 
+mgt_task_depends () {
+    argv=$(getopt -o c:t:o: -l category:,task:,on: -- "$@")
+    eval set -- "$argv"
+    
+    local on task_id category
+    while [ true ]; do
+        ### TODO: Validate arguments
+        case "$1" in
+            -c|--category)
+                category="$2"
+                ;;
+            -t|--task)
+                task_id="$2"
+                ;;
+            -o|--on)
+                ### TODO treat $on a list in case -o appears more than one time.
+                on="$2"
+                ;;
+            --)
+                shift
+                break
+                ;;
+            *)
+                usage_task_depends
+                exit 1
+                ;;
+        esac
+        shift 2
+    done
+    set -x
+    if [ ! -d "$MGT_PROJECT_PATH/$category" ]; then
+        echo "mgt: task: '$category' not found"
+        exit 1
+    fi
+    if [ ! -f "$MGT_PROJECT_PATH/$category/$task_id" ]; then
+        echo "mgt: task: '$task_id' not found"
+        exit 1
+    fi
+
+    deps=$(grep -e 'Depends: None' "$MGT_PROJECT_PATH/$category/$task_id")
+    if [ -z "$deps" ]; then
+        deps=$(grep -e 'Depends: ' "$MGT_PROJECT_PATH/$category/$task_id" | grep $on)
+        ### TODO manage case where $on holds many values
+        if [ -z "$deps" ]; then
+            sed -i "s!Depends: \(.*\)$!Depends: \1, $on!" $MGT_PROJECT_PATH/$category/$task_id
+        fi
+    else
+        sed -i "s!Depends: None!Depends: $on!" $MGT_PROJECT_PATH/$category/$task_id
+    fi
+    $GIT add "$MGT_PROJECT_PATH/$category/$task_id"
+    $GIT commit -s -m "$(cat $MGT_CONF_PATH/project): depends: $category/$task_id depends on $on"
+    exit $?
+}
+
 if [ -z "$1" ]; then
     usage_task
 fi
@@ -242,6 +296,10 @@ case $1 in
         fi
 
         task_id=$(expr $(cat $MGT_CONF_PATH/task_id) + 1)
+        if [ -z $task_id ]; then
+            echo "Error getting task id, check $MGT_CONF_PATH/task_id and configuration."
+            exit 1
+        fi
         echo -n "$task_id" > $MGT_CONF_PATH/task_id
         mkdir -p "$MGT_PROJECT_PATH/$category"
         echo "Task-Id: $task_id" > "$MGT_PROJECT_PATH/$category/$task_id"
@@ -257,6 +315,8 @@ case $1 in
         echo "# Long description" >> "$MGT_PROJECT_PATH/$category/$task_id"
         $EDITOR "$MGT_PROJECT_PATH/$category/$task_id"
         if [ $? -ne 0 ]; then
+            ### TODO: improve testing, maybe we should decrease $MGT_CONF_PATH/task_id
+            rm -f "$MGT_PROJECT_PATH/$category/$task_id"
             exit 1
         fi
         sed -i -e '/^\s*#.*$/d' "$MGT_PROJECT_PATH/$category/$task_id"
@@ -428,52 +488,7 @@ case $1 in
 
     depends)
         shift
-        argv=$(getopt -o c:t:o: -l category:,task:,on: -- "$@")
-        eval set -- "$argv"
-        while [ true ]; do
-            ### TODO: Validate arguments
-            case "$1" in
-                -c|--category)
-                    category="$2"
-                    ;;
-                -t|--task)
-                    task_id="$2"
-                    ;;
-                -o|--on)
-                    dep="$2"
-                    ;;
-                --)
-                    shift
-                    break
-                    ;;
-                *)
-                    usage_task_depends
-                    break
-                    ;;
-            esac
-            shift 2
-        done
-
-        if [ ! -d "$MGT_PROJECT_PATH/$category" ]; then
-            echo "mgt: task: '$category' not found"
-            exit 1
-        fi
-        if [ ! -f "$MGT_PROJECT_PATH/$category/$task" ]; then
-            echo "mgt: task: '$task' not found"
-            exit 1
-        fi
-
-        deps=$(grep -e 'Depends: None')
-        if [ -z "$deps" ]; then
-            deps=$(grep -e 'Depends: ' | grep $on)
-            if [ -z "$deps" ]; then
-                sed -i "s!Depends: \(.*\)$!Depends: \1, $on!" $MGT_PROJECT_PATH/$category/$task_id
-            fi
-        else
-            sed -i "s!Depends: None!Depends: $on!" $MGT_PROJECT_PATH/$category/$task_id
-        fi
-        $GIT add "$MGT_PROJECT_PATH/$category/$task_id"
-        $GIT commit -s -m "$(cat $MGT_CONF_PATH/project): depends: $category/$task_id depends on $on"        
+        mgt_task_depends $@
         ;;
 
     tag)
