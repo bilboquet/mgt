@@ -36,6 +36,37 @@ if [ -z "$1" ]; then
     usage_project
 fi
 
+mgt_project_init () {
+    if [ -z "$1" ]; then
+        echo "Project <name> cannot be empty"
+        exit 1
+    fi
+    $GIT checkout -b "$1"
+    if [ $? -ne 0 ]; then
+        exit 1
+    fi
+#    remote=$($GIT remote | grep origin)
+#    if [ ! -z "$remote" ]; then
+#        $GIT branch --set-upstream-to=origin/"$1" "$1"
+#        ret_val=$?
+#        if [ $ret_val -ne 0 ]; then
+#            exit $ret_val
+#        fi
+#    fi
+
+    
+    echo "$1 - $(whoami)" > $MGT_CONF_PATH/description
+    echo -n "$1" > $MGT_CONF_PATH/project
+    echo -n "$(whoami)" > $MGT_CONF_PATH/owner
+    create_initial_tags $MGT_CONF_PATH/tags
+    create_initial_users $MGT_CONF_PATH/users
+    create_initial_categories $MGT_CONF_PATH/categories
+    echo -n "0" >  $MGT_CONF_PATH/task_id
+    $GIT add .
+    $GIT commit -s -m "Project: create project '$1'"
+    exit $?
+}
+
 case $1 in
     -h|--help)
         usage_project
@@ -44,43 +75,41 @@ case $1 in
 
     init)
         shift
-        if [ -z "$1" ]; then
-            echo "Project <name> cannot be empty"
-            exit 1
-        fi
-        $GIT checkout -b "$1"
-        if [ $? -ne 0 ]; then
-            exit 1
-        fi
-        echo "$1 - $(whoami)" > $MGT_CONF_PATH/description
-        echo -n "$1" > $MGT_CONF_PATH/project
-        echo -n "$(whoami)" > $MGT_CONF_PATH/owner
-        create_initial_tags $MGT_CONF_PATH/tags
-        create_initial_users $MGT_CONF_PATH/users
-        create_initial_categories $MGT_CONF_PATH/categories
-        echo -n "0" >  $MGT_CONF_PATH/task_id
-        $GIT add .
-        $GIT commit -s -m "Project: create project '$1'"
+        mgt_project_init $@
         ;;
 
     list)
         $GIT branch -l | grep -v master
+        exit $?
         ;;
 
     select)
         shift
         $GIT checkout "$1"
+        ret_val=$?
         remote=$($GIT remote | grep origin)
         if [ ! -z "$remote" ]; then
-            $GIT pull --rebase
+            $GIT pull --rebase origin "$1"
+            ret_val=$?
         fi
+        exit $ret_val
         ;;
 
     sync)
         remote=$($GIT remote | grep origin)
         if [ ! -z "$remote" ]; then
+            ### FIXME: got a rebase error here, seem branch are getting mixed
             $GIT pull --rebase origin $(basename $(cat $MGT_PATH/.git/HEAD | sed 's!.*: \(.*\)!\1!'))
+            #$GIT pull --rebase origin master
+            ret_val=$?
+            if [ $ret_val -ne 0 ]; then
+                ### FIXME: add better error handling
+                echo "Error while syncing, please fix rebase problem using git."
+                exit $ret_val
+            fi
             $GIT push origin $(basename $(cat $MGT_PATH/.git/HEAD | sed 's!.*: \(.*\)!\1!'))
+            #$GIT push --mirror
+            exit $?
         else
             usage_project
             exit 1
