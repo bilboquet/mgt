@@ -61,7 +61,6 @@ _mgt_task_seach () {
 }
 
 _mgt_taskid () {
-    set -x
     local cur=${COMP_WORDS[COMP_CWORD]}
     local category
     # Is a category defined
