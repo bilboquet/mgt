@@ -67,6 +67,38 @@ mgt_project_init () {
     exit $?
 }
 
+mgt_project_select () {
+    $GIT checkout "$1"
+    ret_val=$?
+    remote=$($GIT remote | grep origin)
+    if [ ! -z "$remote" ]; then
+        $GIT pull --rebase origin "$1"
+        ret_val=$?
+    fi
+    exit $ret_val
+}
+
+mgt_project_sync () {
+    remote=$($GIT remote | grep origin)
+    if [ ! -z "$remote" ]; then
+        ### FIXME: got a rebase error here, seem branch are getting mixed
+        $GIT pull --rebase origin $(basename $(cat $MGT_PATH/.git/HEAD | sed 's!.*: \(.*\)!\1!'))
+        #$GIT pull --rebase origin master
+        ret_val=$?
+        if [ $ret_val -ne 0 ]; then
+            ### FIXME: add better error handling
+            echo "Error while syncing, please fix rebase problem using git."
+            exit $ret_val
+        fi
+        $GIT push origin $(basename $(cat $MGT_PATH/.git/HEAD | sed 's!.*: \(.*\)!\1!'))
+        #$GIT push --mirror
+        exit $?
+    else
+        usage_project
+        exit 1
+    fi
+}
+
 case $1 in
     -h|--help)
         usage_project
@@ -85,35 +117,12 @@ case $1 in
 
     select)
         shift
-        $GIT checkout "$1"
-        ret_val=$?
-        remote=$($GIT remote | grep origin)
-        if [ ! -z "$remote" ]; then
-            $GIT pull --rebase origin "$1"
-            ret_val=$?
-        fi
-        exit $ret_val
+        mgt_project_select $@
+        
         ;;
 
     sync)
-        remote=$($GIT remote | grep origin)
-        if [ ! -z "$remote" ]; then
-            ### FIXME: got a rebase error here, seem branch are getting mixed
-            $GIT pull --rebase origin $(basename $(cat $MGT_PATH/.git/HEAD | sed 's!.*: \(.*\)!\1!'))
-            #$GIT pull --rebase origin master
-            ret_val=$?
-            if [ $ret_val -ne 0 ]; then
-                ### FIXME: add better error handling
-                echo "Error while syncing, please fix rebase problem using git."
-                exit $ret_val
-            fi
-            $GIT push origin $(basename $(cat $MGT_PATH/.git/HEAD | sed 's!.*: \(.*\)!\1!'))
-            #$GIT push --mirror
-            exit $?
-        else
-            usage_project
-            exit 1
-        fi
+        mgt_project_sync
         ;;
 
     --)
