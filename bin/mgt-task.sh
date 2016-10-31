@@ -60,11 +60,12 @@ usage_task_view() {
 }
 
 usage_task_depends() {
-    echo "usage: mgt task depends --on 'dependency_task' --task 'task'"
+    echo "usage: mgt task depends --on 'dependency_task' --ndep 'dependency to remove' --task 'task'"
     echo "  Options:"
     echo "    -c,--category <category>  Category of the view"
     echo "    -t,--task <task>          Task that has a dependency"
-    echo "    -o,--on   <task>          The blocking task (only the 'task_id')"
+    echo "    -o,--on   <task >*        The blocking task (only the 'task_id')"
+    echo "    --ndep    <task >*        Remove a dependency to the given task (only the 'task_id')"
 }
 
 usage_task_estimate() {
@@ -85,9 +86,9 @@ usage_task_remaining() {
 
 mgt_task_depends () {
     ### TODO: check that deps are valid tasks (i.e. they exist)
-    argv=$(getopt -o c:t:o: -l category:,task:,on: -- "$@")
+    argv=$(getopt -o c:t:o: -l category:,task:,on:,ndep: -- "$@")
     eval set -- "$argv"
-    local on task_id category
+    local on task_id category ndep
     while [ true ]; do
         ### TODO: Validate arguments
         case "$1" in
@@ -98,8 +99,10 @@ mgt_task_depends () {
                 task_id="$2"
                 ;;
             -o|--on)
-                ### TODO treat $on a list in case -o appears more than one time.
                 on="$on "$2
+                ;;
+            --ndep)
+                ndep="$ndep "$2
                 ;;
             --)
                 shift
@@ -133,6 +136,14 @@ mgt_task_depends () {
         deps=$(echo ${deps[@]})
         #update deps 
         sed -i "s|Depends: .*$|Depends: $deps|" $MGT_PROJECT_PATH/$category/$task_id
+        
+        ### remove $ndep
+        # loop on all deps to remove
+        read -ra rm_deps <<< $ndep
+        for s_dep in "${rm_deps[@]}"; do
+            # match and remove dep
+            sed -i "s|Depends:\(.*\) $s_dep \(.*\)$|Depends: \1 \2|" $MGT_PROJECT_PATH/$category/$task_id
+        done
     else # no deps yet
         sed -i "s!Depends: None!Depends: $on!" $MGT_PROJECT_PATH/$category/$task_id
     fi

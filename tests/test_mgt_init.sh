@@ -155,6 +155,9 @@ do_test "9.15" "ok" "mgt task add -c todo -d description" "$seq"
 
 do_test "9.16" "ok" "mgt task depends -c todo -t 1 -o 4 -o \"2 3\""
 
+do_test "9.17" "ok" "mgt task depends -c todo -t 1 -o 6 --ndep \"2 3 4\""
+
+
 
 
 #### end of tests
