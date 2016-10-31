@@ -84,9 +84,9 @@ usage_task_remaining() {
 }
 
 mgt_task_depends () {
+    ### TODO: check that deps are valid tasks (i.e. they exist)
     argv=$(getopt -o c:t:o: -l category:,task:,on: -- "$@")
     eval set -- "$argv"
-    
     local on task_id category
     while [ true ]; do
         ### TODO: Validate arguments
@@ -99,7 +99,7 @@ mgt_task_depends () {
                 ;;
             -o|--on)
                 ### TODO treat $on a list in case -o appears more than one time.
-                on="$2"
+                on="$on "$2
                 ;;
             --)
                 shift
@@ -112,7 +112,6 @@ mgt_task_depends () {
         esac
         shift 2
     done
-    set -x
     if [ ! -d "$MGT_PROJECT_PATH/$category" ]; then
         echo "mgt: task: '$category' not found"
         exit 1
@@ -123,13 +122,18 @@ mgt_task_depends () {
     fi
 
     deps=$(grep -e 'Depends: None' "$MGT_PROJECT_PATH/$category/$task_id")
-    if [ -z "$deps" ]; then
-        deps=$(grep -e 'Depends: ' "$MGT_PROJECT_PATH/$category/$task_id" | grep $on)
-        ### TODO manage case where $on holds many values
-        if [ -z "$deps" ]; then
-            sed -i "s!Depends: \(.*\)$!Depends: \1, $on!" $MGT_PROJECT_PATH/$category/$task_id
-        fi
-    else
+    if [ -z "$deps" ]; then # some deps found
+        # get old deps
+        deps=$(grep -e 'Depends: ' ~/.mgt-test/project/todo/1 | sed -e "s|Depends: \(.*\)$|\1|")
+        # merge old and new deps
+        read -ra new_deps <<< "$on $deps"
+        # remove duplicates
+        deps=( $(printf "%s\n" "${new_deps[@]}" | sort -nu) )
+        # flatten
+        deps=$(echo ${deps[@]})
+        #update deps 
+        sed -i "s|Depends: .*$|Depends: $deps|" $MGT_PROJECT_PATH/$category/$task_id
+    else # no deps yet
         sed -i "s!Depends: None!Depends: $on!" $MGT_PROJECT_PATH/$category/$task_id
     fi
     $GIT add "$MGT_PROJECT_PATH/$category/$task_id"
@@ -488,7 +492,7 @@ case $1 in
 
     depends)
         shift
-        mgt_task_depends $@
+        mgt_task_depends "$@"
         ;;
 
     tag)
