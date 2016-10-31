@@ -58,23 +58,25 @@ do_test () {
     shift
     exp_res="$1"
     shift
-    
-    echo -n "##### test $test_name : $1"
+            
+    echo -n "##### test $test_name : '$1'"
     if [ $# -eq 1 ]; then
         echo
         if [ ! $interactive ]; then
-            test_out=$($1 2>&1)
+            cmd="$1 2>&1"
+            eval test_out=\$\($cmd\)
             check_res "$test_name" "$exp_res" "$?" "$test_out"
         else
-            $1
+            eval "$1"
         fi
     else
         echo $2
         if [ ! $interactive ]; then
+            ### TODO: as above use eval to prevent param spliting
             test_out=$($1 <<< "$2" 2>&1)
             check_res "$test_name" "$exp_res" "$?" "$test_out"
         else
-            $1 <<< "$2"
+            eval $1 <<< "$2"
         fi
     fi
     echo
@@ -86,6 +88,7 @@ echo "##################################################"
 echo "#### Warning, this test will remove $MGT_PATH ####"
 echo "##################################################"
 echo "Press enter to continue or C^c to quit"
+
 read
 
 #rm -rf $MGT_PATH
@@ -118,7 +121,8 @@ do_test "9.1" "nok" "mgt task add"
 
 do_test "9.2" "nok" "mgt task add -c todo"
 
-do_test "-i" "9.3" "ok" "mgt task add -c todo -d description"
+seq=$'\030' #Send ^X to nano editor so it closes 
+do_test "9.3" "ok" "mgt task add -c todo -d description" "$seq"
 
 do_test "9.4" "ok" "mgt task search"
 
@@ -131,13 +135,27 @@ do_test "9.6" "ok" "mgt task search -f Assignee=Jean"
 
 do_test "9.8" "ok" "mgt project select test_proj1"
 
-do_test "-i" "9.9" "ok" "mgt task add -c todo -d description"
+seq=$'\030'
+do_test "9.9" "ok" "mgt task add -c todo -d description" "$seq"
 
 #do_test "9.10" "ok" "mgt project sync"
 
-do_test "-i" "9.11" "ok" "mgt task add -c todo -d description"
+seq=$'\030'
+do_test "9.11" "ok" "mgt task add -c todo -d description" "$seq"
 
 do_test "9.12" "ok" "mgt task depends -c todo -t 1 -o 2"
+
+seq=$'\030'
+do_test "9.13" "ok" "mgt task add -c todo -d description"  "$seq"
+
+do_test "9.14" "ok" "mgt task depends -c todo -t 1 -o \"2 3\""
+
+seq=$'\030'
+do_test "9.15" "ok" "mgt task add -c todo -d description" "$seq"
+
+do_test "9.16" "ok" "mgt task depends -c todo -t 1 -o 4 -o \"2 3\""
+
+
 
 #### end of tests
 #sed -i -e 's#MGT_PATH=~/.mgt-test.*#MGT_PATH=~/.mgt#' ~/.mgtconfig
