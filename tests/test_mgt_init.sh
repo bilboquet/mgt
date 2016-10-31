@@ -88,7 +88,7 @@ echo "##################################################"
 echo "#### Warning, this test will remove $MGT_PATH ####"
 echo "##################################################"
 echo "Press enter to continue or C^c to quit"
-
+#if false; then # jump to #end jump
 read
 
 #rm -rf $MGT_PATH
@@ -147,15 +147,15 @@ do_test "9.12" "ok" "mgt task depends -c todo -t 1 -o 2"
 
 seq=$'\030'
 do_test "9.13" "ok" "mgt task add -c todo -d description"  "$seq"
-
-do_test "9.14" "ok" "mgt task depends -c todo -t 1 -o \"2 3\""
+#fi #end jump
+do_test "9.14" "ok" "mgt task depends -c todo -t 1 -o 2,3"
 
 seq=$'\030'
 do_test "9.15" "ok" "mgt task add -c todo -d description" "$seq"
 
-do_test "9.16" "ok" "mgt task depends -c todo -t 1 -o 4 -o \"2 3\""
+do_test "9.16" "ok" "mgt task depends -c todo -t 1 -o 4 -o 2,3"
 
-do_test "9.17" "ok" "mgt task depends -c todo -t 1 -o 6 --ndep \"2 3 4\""
+do_test "9.17" "ok" "mgt task depends -c todo -t 1 -o 6 --ndep \"2,3,4\""
 
 
 

@@ -99,10 +99,10 @@ mgt_task_depends () {
                 task_id="$2"
                 ;;
             -o|--on)
-                on="$on "$2
+                on="$on,"$2
                 ;;
             --ndep)
-                ndep="$ndep "$2
+                ndep="$ndep,"$2
                 ;;
             --)
                 shift
@@ -124,26 +124,35 @@ mgt_task_depends () {
         exit 1
     fi
 
+    on=${on//,/ }
+    ndep=${ndep//,/ }
+
     deps=$(grep -e 'Depends: None' "$MGT_PROJECT_PATH/$category/$task_id")
     if [ -z "$deps" ]; then # some deps found
         # get old deps
-        deps=$(grep -e 'Depends: ' ~/.mgt-test/project/todo/1 | sed -e "s|Depends: \(.*\)$|\1|")
+        deps=$(grep -e 'Depends: ' "$MGT_PROJECT_PATH/$category/$task_id" | sed -e "s|Depends: \(.*\)$|\1|")
         # merge old and new deps
         read -ra new_deps <<< "$on $deps"
         # remove duplicates
-        deps=( $(printf "%s\n" "${new_deps[@]}" | sort -nu) )
+        on=( $(printf "%s\n" "${new_deps[@]}" | sort -nu) )
         # flatten
-        deps=$(echo ${deps[@]})
-        #update deps 
-        sed -i "s|Depends: .*$|Depends: $deps|" $MGT_PROJECT_PATH/$category/$task_id
+        on=$(echo ${on[@]})
         
         ### remove $ndep
-        # loop on all deps to remove
-        read -ra rm_deps <<< $ndep
+        # loop on all deps to be removed
+        read -ra rm_deps <<< "$ndep"
         for s_dep in "${rm_deps[@]}"; do
-            # match and remove dep
-            sed -i "s|Depends:\(.*\) $s_dep \(.*\)$|Depends: \1 \2|" $MGT_PROJECT_PATH/$category/$task_id
+            #remove s_dep from deps
+            on=$(echo $on | sed -e "s/\<$s_dep\>//g")
         done
+
+        if [ "$on" == "" ]; then
+            #no deps anymore
+            on="None"
+        fi
+        #update deps 
+        sed -i "s|Depends: .*$|Depends: $on|" $MGT_PROJECT_PATH/$category/$task_id
+
     else # no deps yet
         sed -i "s!Depends: None!Depends: $on!" $MGT_PROJECT_PATH/$category/$task_id
     fi
