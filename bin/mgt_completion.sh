@@ -64,15 +64,15 @@ _mgt_taskid () {
     local cur=${COMP_WORDS[COMP_CWORD]}
     local category
     # Is a category defined
-    for (( ind=0 ; $ind -le "${#COMP_WORDS[@]}" ; ++ind )); do
-        if [ "${COMP_WORDS[$ind]}" == "-c" || "${COMP_WORDS[$ind]}" == "--category" ]; then
+    for (( ind=0 ; $ind <= ${#COMP_WORDS[@]} ; ++ind )); do
+        local cur_arg="${COMP_WORDS[$ind]}"
+        if [[ "$cur_arg" == "-c" || "$cur_arg" == "--category" ]]; then
             # Let's suppose next element is the category
-            category=${COMP_WORDS[$ind+1]}
+            category="-c "${COMP_WORDS[$ind+1]}
             break
         fi
     done
-    
-    local tasks=$(mgt task search -c todo | sed -e 's@.*/\([0-9]*\):.*$@\1@')
+    local tasks=$(mgt task search $category | sed -e 's@.*/\([0-9]*\):.*$@\1@')
     COMPREPLY=( $( compgen -W "$tasks" -- ${cur} ) )
     set +x
     return 0
@@ -89,7 +89,7 @@ _mgt_task_depends () {
     local cur prev opts
     cur=${COMP_WORDS[COMP_CWORD]}
     prev="${COMP_WORDS[COMP_CWORD-1]}"
-    opts="-c --category -t --task -o --on"
+    opts="-c --category -t --task -o --on --ndep"
 
     # filter used options
     if [[ "$COMP_LINE" == *" --category "* ||  "$COMP_LINE" == *" -c "* ]]; then
@@ -102,7 +102,7 @@ _mgt_task_depends () {
     fi
 
     case "$prev" in
-        -o|--on|-t|--task)
+        -o|--on|-t|--task|--ndep)
             _mgt_taskid
             return 0
             ;;
