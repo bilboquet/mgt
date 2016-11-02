@@ -135,21 +135,21 @@ do_test "7.2" "ok" "mgt project init test_proj2"
 
 do_test "8" "ok" "mgt project list"
 
-do_test "9" "ok" "mgt task search"
-
-do_test "9.1" "nok" "mgt task add"
-
-do_test "9.2" "nok" "mgt task add -c todo"
+#do_test "9" "ok" "mgt task search"
+#
+#do_test "9.1" "nok" "mgt task add"
+#
+#do_test "9.2" "nok" "mgt task add -c todo"
 
 seq=$'\030' #Send ^X to nano editor so it closes 
 do_test "9.3" "ok" "mgt task add -c todo -d description" "$seq"
 
-do_test "9.4" "ok" "mgt task search"
-
-seq=$'s\nh\na\nh\nq'
-do_test "9.5" "ok" "mgt task search -i" "$seq"
-
-do_test "9.6" "ok" "mgt task search -f Assignee=Jean"
+#do_test "9.4" "ok" "mgt task search"
+#
+#seq=$'s\nh\na\nh\nq'
+#do_test "9.5" "ok" "mgt task search -i" "$seq"
+#
+#do_test "9.6" "ok" "mgt task search -f Assignee=Jean"
 
 do_test "9.7" "ok" "mgt project sync"
 
@@ -175,11 +175,11 @@ do_test "9.15" "ok" "mgt task add -c todo -d description" "$seq"
 
 do_test "9.16" "ok" "mgt task depends -c todo -t 1 -o 4 -o 2,3"
 
-do_test "9.17" "ok" "mgt task depends -c todo -t 1 -o 6 --ndep \"2,3,4\""
+do_test "9.17" "ok" "mgt task depends -c todo -t 1 -o 3 --ndep \"2,4\""
 
-
+do_test "9.18" "nok" "mgt task depends -c todo -t 1 -o 6 --ndep \"2,3,4\""
 
 
 #### end of tests
 rm -rf /tmp/test.git /tmp/mgt-test
-#sed -i -e 's#MGT_PATH=~/.mgt-test.*#MGT_PATH=~/.mgt#' ~/.mgtconfig
+#sed -i -e 's#MGT_PATH=/tmp/mgt-test.*#MGT_PATH=~/.mgt#' ~/.mgtconfig
