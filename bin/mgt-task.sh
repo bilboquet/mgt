@@ -84,25 +84,76 @@ usage_task_remaining() {
     echo "    -r,--remaining <value>   Task estimation of the remaining"
 }
 
-mgt_task_depends () {
+# Return 0 if $1 is a defined category
+# else print a message and return 1
+function exist_category () {
+    if [ ! -d "$MGT_PROJECT_PATH/$1" ]; then
+        echo "mgt: category: '$1' not found"
+        return 1
+    fi
+    return 0
+}
+
+# Return 0 if $1 is a defined task AND $2 is a defined category
+# else print a message and return 1
+function exist_task_in_cat () {
+    if exist_category "$2" ; then
+         if [ -f "$MGT_PROJECT_PATH/$category/$1" ]; then
+            return 0
+        else
+            echo "mgt: task: '$1' not found"
+            return 1
+        fi
+    fi
+    return 1
+}
+
+# Return 0 if $1 is a defined task 
+function exist_task () {
+    task=$(find /home/jf/.mgt-test/project/ -name $1)
+    if [ -e "$task" ]; then 
+        return 0 
+    fi
+    return 1
+}
+
+function mgt_task_depends () {
     ### TODO: check that deps are valid tasks (i.e. they exist)
     argv=$(getopt -o c:t:o: -l category:,task:,on:,ndep: -- "$@")
     eval set -- "$argv"
     local on task_id category ndep
     while [ true ]; do
-        ### TODO: Validate arguments
         case "$1" in
             -c|--category)
-                category="$2"
+                if exist_category "$2"; then
+                    category="$2"
+                else
+                    exit 1
+                fi
                 ;;
             -t|--task)
-                task_id="$2"
+                if exist_task "$2"; then
+                    task_id="$2"
+                else
+                    echo "mgt: task: '$2' not found"
+                    exit 1
+                fi
                 ;;
             -o|--on)
-                on="$on,"$2
+                if exist_task "$2"; then
+                    on="$on,"$2
+                else
+                    echo "mgt: task: '$2' not found"
+                    exit 1
+                fi
                 ;;
             --ndep)
-                ndep="$ndep,"$2
+                if exist_task "$2"; then
+                    ndep="$ndep,"$2
+                else
+                    echo "mgt: task: '$2' not found"
+                    exit 1
+                fi
                 ;;
             --)
                 shift
@@ -115,12 +166,8 @@ mgt_task_depends () {
         esac
         shift 2
     done
-    if [ ! -d "$MGT_PROJECT_PATH/$category" ]; then
-        echo "mgt: task: '$category' not found"
-        exit 1
-    fi
-    if [ ! -f "$MGT_PROJECT_PATH/$category/$task_id" ]; then
-        echo "mgt: task: '$task_id' not found"
+
+    if ! exist_task_in_cat $task_id $category ; then
         exit 1
     fi
 
@@ -178,10 +225,19 @@ case $1 in
         while [ true ]; do
             case "$1" in
                 -c|--category)
-                    category="$2"
+                    if exist_category "$2"; then
+                        category="$2"
+                    else
+                        exit 1
+                    fi
                     ;;
                 -t|--task)
-                    task_id="$2"
+                    if exist_task "$2"; then
+                        task_id="$2"
+                    else
+                        echo "mgt: task: '$2' not found"
+                        exit 1
+                    fi
                     ;;
                 --)
                     shift
@@ -195,12 +251,7 @@ case $1 in
             shift 2
         done
 
-        if [ ! -d "$MGT_PROJECT_PATH/$category" ]; then
-            echo "mgt: category: '$category' does not exists."
-            exit 1
-        fi
-        if [ ! -f "$MGT_PROJECT_PATH/$category/$task_id" ]; then
-            echo "mgt: task: '$category/$task_id' does not exists."
+        if ! exist_task_in_cat $task_id $category ; then
             exit 1
         fi
 
@@ -215,7 +266,11 @@ case $1 in
         while [ true ]; do
             case "$1" in
                 -c|--category)
-                    category="$2"
+                    if exist_category "$2"; then
+                        category="$2"
+                    else
+                        exit 1
+                    fi
                     shift
                     ;;
                 -f|--filter)
@@ -290,10 +345,19 @@ case $1 in
         while [ true ]; do
             case "$1" in
                 -c|--category)
-                    category="$2"
+                    if exist_category "$2"; then
+                        category="$2"
+                    else
+                        exit 1
+                    fi
                     ;;
                 -T|--tags)
-                    tags="$2"
+                    if exist_task "$2"; then
+                        task_id="$2"
+                    else
+                        echo "mgt: task: '$2' not found"
+                        exit 1
+                    fi
                     ;;
                 -d|--description)
                     description="$2"
@@ -357,13 +421,26 @@ case $1 in
             ### TODO: Validate arguments
             case "$1" in
                 --from)
-                    from="$2"
+                    if exist_category "$2"; then
+                        from="$2"
+                    else
+                        exit 1
+                    fi
                     ;;
                 --to)
-                    to="$2"
+                    if exist_category "$2"; then
+                        to="$2"
+                    else
+                        exit 1
+                    fi
                     ;;
                 -t|--task)
-                    task_id="$2"
+                    if exist_task "$2"; then
+                        task_id="$2"
+                    else
+                        echo "mgt: task: '$2' not found"
+                        exit 1
+                    fi
                     ;;
                 --)
                     shift
@@ -377,16 +454,11 @@ case $1 in
             shift 2
         done
 
-        if [ ! -d "$MGT_PROJECT_PATH/$from" ]; then
-            echo "mgt: category: '$from' does not exists."
+        if ! exist_task_in_cat $task_id $from ; then
             exit 1
         fi
         if [ ! -d "$MGT_PROJECT_PATH/$to" ]; then
             echo "mgt: category: '$to' does not exists."
-            exit 1
-        fi
-        if [ ! -f "$MGT_PROJECT_PATH/$from/$task_id" ]; then
-            echo "mgt: task: '$from/$task_id' does not exists."
             exit 1
         fi
 
@@ -404,10 +476,19 @@ case $1 in
             ### TODO: Validate arguments
             case "$1" in
                 -c|--category)
-                    category="$2"
+                    if exist_category "$2"; then
+                        category="$2"
+                    else
+                        exit 1
+                    fi
                     ;;
                 -t|--task)
-                    task_id="$2"
+                    if exist_task "$2"; then
+                        task_id="$2"
+                    else
+                        echo "mgt: task: '$2' not found"
+                        exit 1
+                    fi
                     break
                     ;;
                 *)
@@ -418,12 +499,7 @@ case $1 in
             shift 2
         done
 
-        if [ ! -d "$MGT_PROJECT_PATH/$category" ]; then
-            echo "mgt: category: '$category' does not exists."
-            exit 1
-        fi
-        if [ ! -f "$MGT_PROJECT_PATH/$category/$task_id" ]; then
-            echo "mgt: task: '$category/$task_id' does not exists."
+        if ! exist_task_in_cat $task_id $category ; then
             exit 1
         fi
 
@@ -433,17 +509,25 @@ case $1 in
         ;;
 
     rm)
+    ### TODO: rewrite using getopt
         while [ true ]; do
             shift
-
-            ### TODO: Validate arguments
             case $1 in
                 -c|--category)
-                    category=$2
+                    if exist_category "$2"; then
+                        category="$2"
+                    else
+                        exit 1
+                    fi
                     ;;
                 --task)
                     shift
-                    task_id=$1
+                    if exist_task "$1"; then
+                        task_id="$1"
+                    else
+                        echo "mgt: task: '$1' not found"
+                        exit 1
+                    fi
                     break
                     ;;
                 *)
@@ -454,15 +538,10 @@ case $1 in
             shift
         done
 
-        if [ ! -d "$MGT_PROJECT_PATH/$category" ]; then
-            echo "mgt: category: '$category' does not exists."
+        if ! exist_task_in_cat $task_id $category ; then
             exit 1
         fi
 
-        if [ ! -f "$MGT_PROJECT_PATH/$category/$task_id" ]; then
-            echo "mgt: task: '$category/$task_id' does not exists."
-            exit 1
-        fi
         $GIT rm "$MGT_PROJECT_PATH/$category/$task_id"
         $GIT commit -s -m "$(cat $MGT_CONF_PATH/project): remove: $category/$task_id"
         ;;
@@ -475,10 +554,19 @@ case $1 in
             ### TODO: Validate arguments
             case "$1" in
                 -c|--category)
-                    category="$2"
+                    if exist_category "$2"; then
+                        category="$2"
+                    else
+                        exit 1
+                    fi
                     ;;
                 -t|--task)
-                    task_id="$2"
+                    if exist_task "$2"; then
+                        task_id="$2"
+                    else
+                        echo "mgt: task: '$2' not found"
+                        exit 1
+                    fi
                     ;;
                 -u|--username)
                     username="$2"
@@ -496,12 +584,7 @@ case $1 in
             shift 2
         done
 
-        if [ ! -d "$MGT_PROJECT_PATH/$category" ]; then
-            echo "mgt: task: category '$category' not found"
-            exit 1
-        fi
-        if [ ! -f "$MGT_PROJECT_PATH/$category/$task_id" ]; then
-            echo "mgt: task: '$task_id' not found"
+        if ! exist_task_in_cat $task_id $category ; then
             exit 1
         fi
 
@@ -527,10 +610,19 @@ case $1 in
             ### TODO: Validate arguments
             case "$1" in
                 -c|--category)
-                    category="$2"
+                    if exist_category "$2"; then
+                        category="$2"
+                    else
+                        exit 1
+                    fi
                     ;;
                 -t|--task)
-                    task_id="$2"
+                    if exist_task "$2"; then
+                        task_id="$2"
+                    else
+                        echo "mgt: task: '$2' not found"
+                        exit 1
+                    fi
                     ;;
                 -e|--estimation)
                     estimation="$2"
@@ -548,12 +640,7 @@ case $1 in
             shift 2
         done
 
-        if [ ! -d "$MGT_PROJECT_PATH/$category" ]; then
-            echo "mgt: task: category '$category' not found"
-            exit 1
-        fi
-        if [ ! -f "$MGT_PROJECT_PATH/$category/$task_id" ]; then
-            echo "mgt: task: '$task_id' not found"
+        if ! exist_task_in_cat $task_id $category ; then
             exit 1
         fi
 
@@ -570,10 +657,19 @@ case $1 in
             ### TODO: Validate arguments
             case "$1" in
                 -c|--category)
-                    category="$2"
+                    if exist_category "$2"; then
+                        category="$2"
+                    else
+                        exit 1
+                    fi
                     ;;
                 -t|--task)
-                    task_id="$2"
+                    if exist_task "$2"; then
+                        task_id="$2"
+                    else
+                        echo "mgt: task: '$2' not found"
+                        exit 1
+                    fi
                     ;;
                 -r|--remaining)
                     remaining="$2"
@@ -591,12 +687,7 @@ case $1 in
             shift 2
         done
 
-        if [ ! -d "$MGT_PROJECT_PATH/$category" ]; then
-            echo "mgt: task: category '$category' not found"
-            exit 1
-        fi
-        if [ ! -f "$MGT_PROJECT_PATH/$category/$task_id" ]; then
-            echo "mgt: task: '$task_id' not found"
+        if ! exist_task_in_cat $task_id $category ; then
             exit 1
         fi
 
