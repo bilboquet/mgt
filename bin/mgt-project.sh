@@ -13,7 +13,7 @@ usage_project () {
     echo "       mgt project sync"
 }
 
-create_initial_tags() {
+function create_initial_tags() {
     echo "enhancement:Enhancement" > "$1"
     echo "bug:Bug" >> "$1"
     echo "duplicate:Duplicate" >> "$1"
@@ -23,40 +23,30 @@ create_initial_tags() {
     echo "helpwanted:Help Wanted" >> "$1"
 }
 
-create_initial_users() {
+function create_initial_users() {
     echo "$(whoami):$(git config user.name) <$(git config user.email)>" > "$1"
 }
 
-create_initial_categories() {
-    echo "todo:Todo:*" >> $1
-    mkdir -p $MGT_PROJECT_PATH/"todo"
-    echo "done:Done:" >> $1
-    mkdir -p $MGT_PROJECT_PATH/"done"
+function create_initial_categories() {
+    mgt category add -c "todo" -l "Todo" -d
+    mgt category add -c "done" -l "Done"
 }
 
 if [ -z "$1" ]; then
     usage_project
 fi
 
-mgt_project_init () {
+function mgt_project_init () {
     if [ -z "$1" ]; then
         echo "Project <name> cannot be empty"
         exit 1
     fi
-    $GIT checkout -b "$1"
+
+    $GIT checkout -b "$1" #$trac
     if [ $? -ne 0 ]; then
         exit 1
     fi
-#    remote=$($GIT remote | grep origin)
-#    if [ ! -z "$remote" ]; then
-#        $GIT branch --set-upstream-to=origin/"$1" "$1"
-#        ret_val=$?
-#        if [ $ret_val -ne 0 ]; then
-#            exit $ret_val
-#        fi
-#    fi
 
-    
     echo "$1 - $(whoami)" > $MGT_CONF_PATH/description
     echo -n "$1" > $MGT_CONF_PATH/project
     echo -n "$(whoami)" > $MGT_CONF_PATH/owner
@@ -66,10 +56,16 @@ mgt_project_init () {
     echo -n "0" >  $MGT_CONF_PATH/task_id
     $GIT add .
     $GIT commit -s -m "Project: create project '$1'"
+
+    remote=$($GIT remote | grep origin)
+    if [ ! -z "$remote" ]; then
+        $GIT push --set-upstream "$remote" "$1" 
+    fi
     exit $?
 }
 
-mgt_project_select () {
+function mgt_project_select () {
+    set -x
     $GIT checkout "$1"
     ret_val=$?
     remote=$($GIT remote | grep origin)
@@ -83,9 +79,7 @@ mgt_project_select () {
 mgt_project_sync () {
     remote=$($GIT remote | grep origin)
     if [ ! -z "$remote" ]; then
-        ### FIXME: got a rebase error here, seem branch are getting mixed
         $GIT pull --rebase origin $(basename $(cat $MGT_PATH/.git/HEAD | sed 's!.*: \(.*\)!\1!'))
-        #$GIT pull --rebase origin master
         ret_val=$?
         if [ $ret_val -ne 0 ]; then
             ### FIXME: add better error handling
@@ -93,7 +87,6 @@ mgt_project_sync () {
             exit $ret_val
         fi
         $GIT push origin $(basename $(cat $MGT_PATH/.git/HEAD | sed 's!.*: \(.*\)!\1!'))
-        #$GIT push --mirror
         exit $?
     else
         usage_project
