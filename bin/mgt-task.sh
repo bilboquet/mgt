@@ -110,15 +110,89 @@ function exist_task_in_cat () {
 
 # Return 0 if $1 is a defined task 
 function exist_task () {
-    task=$(find /home/jf/.mgt-test/project/ -name $1)
+    task=$(find "$MGT_PROJECT_PATH" -name "$1")
     if [ -e "$task" ]; then 
         return 0 
     fi
     return 1
 }
 
+function mgt_task_add () {
+    argv=$(getopt -o c:T:d: -l category:,tags:,description: -- "$@")
+    eval set -- "$argv"
+
+    while [ true ]; do
+        case "$1" in
+            -c|--category)
+                if exist_category "$2"; then
+                    category="$2"
+                else
+                    exit 1
+                fi
+                ;;
+            -T|--tags)
+                if exist_task "$2"; then
+                    task_id="$2"
+                else
+                    echo "mgt: task: '$2' not found"
+                    exit 1
+                fi
+                ;;
+            -d|--description)
+                description="$2"
+                ;;
+            --)
+                break
+                ;;
+            *)
+                usage_task_add
+                exit 1
+                ;;
+        esac
+        shift 2
+    done
+
+    if [ -z "$category" ]; then
+        category=$(grep -e \* $MGT_CONF_PATH/categories | cut -f 1 -d':')
+        echo "$category"
+    fi
+    if [ -z "$description" ]; then
+        usage_task
+        echo "Missing description"
+        exit 1
+    fi
+
+    task_id=$(expr $(cat $MGT_CONF_PATH/task_id) + 1)
+    if [ -z $task_id ]; then
+        echo "Error getting task id, check $MGT_CONF_PATH/task_id and configuration."
+        exit 1
+    fi
+    echo -n "$task_id" > $MGT_CONF_PATH/task_id
+    mkdir -p "$MGT_PROJECT_PATH/$category"
+    echo "Task-Id: $task_id" > "$MGT_PROJECT_PATH/$category/$task_id"
+    echo "Author: $(git config user.name) <$(git config user.email)>" >> "$MGT_PROJECT_PATH/$category/$task_id"
+    echo "Assignee: None" >> "$MGT_PROJECT_PATH/$category/$task_id"
+    echo "Date: $(date)" >> "$MGT_PROJECT_PATH/$category/$task_id"
+    echo "Estimation: None" >> "$MGT_PROJECT_PATH/$category/$task_id"
+    echo "Remaining: None" >> "$MGT_PROJECT_PATH/$category/$task_id"
+    echo "Tags: $tags" >> "$MGT_PROJECT_PATH/$category/$task_id"
+    echo "Depends: None" >> "$MGT_PROJECT_PATH/$category/$task_id"
+    echo "Description: $description" >> "$MGT_PROJECT_PATH/$category/$task_id"
+    echo "" >> "$MGT_PROJECT_PATH/$category/$task_id"
+    echo "# Long description" >> "$MGT_PROJECT_PATH/$category/$task_id"
+    $EDITOR "$MGT_PROJECT_PATH/$category/$task_id"
+    if [ $? -ne 0 ]; then
+        ### TODO: improve testing, maybe we should decrease $MGT_CONF_PATH/task_id
+        rm -f "$MGT_PROJECT_PATH/$category/$task_id"
+        exit 1
+    fi
+    sed -i -e '/^\s*#.*$/d' "$MGT_PROJECT_PATH/$category/$task_id"
+    $GIT add "$MGT_CONF_PATH/task_id" "$MGT_PROJECT_PATH/$category/$task_id"
+    $GIT commit -s -m "$(cat $MGT_CONF_PATH/project): add: $category/$task_id" -m "$description"
+    echo "Task: $category/$task_id added successfully"
+}
+
 function mgt_task_depends () {
-    ### TODO: check that deps are valid tasks (i.e. they exist)
     argv=$(getopt -o c:t:o: -l category:,task:,on:,ndep: -- "$@")
     eval set -- "$argv"
     local on task_id category ndep
@@ -140,20 +214,10 @@ function mgt_task_depends () {
                 fi
                 ;;
             -o|--on)
-                if exist_task "$2"; then
-                    on="$on,"$2
-                else
-                    echo "mgt: task: '$2' not found"
-                    exit 1
-                fi
+                on="$on,"$2
                 ;;
             --ndep)
-                if exist_task "$2"; then
-                    ndep="$ndep,"$2
-                else
-                    echo "mgt: task: '$2' not found"
-                    exit 1
-                fi
+                ndep="$ndep,"$2
                 ;;
             --)
                 shift
@@ -173,6 +237,17 @@ function mgt_task_depends () {
 
     on=${on//,/ }
     ndep=${ndep//,/ }
+
+    # check that tasks given as --on and --ndep exist
+    read -ra deps <<< "$on $ndep"
+    for s_dep in "${deps[@]}"; do
+        if ! exist_task "$s_dep"; then
+        echo "mgt: task: '$s_dep' not found"
+        exit 1
+    fi
+    done
+
+
 
     deps=$(grep -e 'Depends: None' "$MGT_PROJECT_PATH/$category/$task_id")
     if [ -z "$deps" ]; then # some deps found
@@ -207,6 +282,7 @@ function mgt_task_depends () {
     $GIT commit -s -m "$(cat $MGT_CONF_PATH/project): depends: $category/$task_id depends on $on"
     exit $?
 }
+
 
 if [ -z "$1" ]; then
     usage_task
@@ -340,77 +416,7 @@ case $1 in
 
     add)
         shift
-        argv=$(getopt -o c:T:d: -l category:,tags:,description: -- "$@")
-        eval set -- "$argv"
-        while [ true ]; do
-            case "$1" in
-                -c|--category)
-                    if exist_category "$2"; then
-                        category="$2"
-                    else
-                        exit 1
-                    fi
-                    ;;
-                -T|--tags)
-                    if exist_task "$2"; then
-                        task_id="$2"
-                    else
-                        echo "mgt: task: '$2' not found"
-                        exit 1
-                    fi
-                    ;;
-                -d|--description)
-                    description="$2"
-                    ;;
-                --)
-                    break
-                    ;;
-                *)
-                    usage_task_add
-                    exit 1
-                    ;;
-            esac
-            shift 2
-        done
-
-        if [ -z "$category" ]; then
-            category=$(grep -e \* $MGT_CONF_PATH/categories | cut -f 1 -d':')
-            echo "$category"
-        fi
-        if [ -z "$description" ]; then
-            usage_task
-            echo "Missing description"
-            exit 1
-        fi
-
-        task_id=$(expr $(cat $MGT_CONF_PATH/task_id) + 1)
-        if [ -z $task_id ]; then
-            echo "Error getting task id, check $MGT_CONF_PATH/task_id and configuration."
-            exit 1
-        fi
-        echo -n "$task_id" > $MGT_CONF_PATH/task_id
-        mkdir -p "$MGT_PROJECT_PATH/$category"
-        echo "Task-Id: $task_id" > "$MGT_PROJECT_PATH/$category/$task_id"
-        echo "Author: $(git config user.name) <$(git config user.email)>" >> "$MGT_PROJECT_PATH/$category/$task_id"
-        echo "Assignee: None" >> "$MGT_PROJECT_PATH/$category/$task_id"
-        echo "Date: $(date)" >> "$MGT_PROJECT_PATH/$category/$task_id"
-        echo "Estimation: None" >> "$MGT_PROJECT_PATH/$category/$task_id"
-        echo "Remaining: None" >> "$MGT_PROJECT_PATH/$category/$task_id"
-        echo "Tags: $tags" >> "$MGT_PROJECT_PATH/$category/$task_id"
-        echo "Depends: None" >> "$MGT_PROJECT_PATH/$category/$task_id"
-        echo "Description: $description" >> "$MGT_PROJECT_PATH/$category/$task_id"
-        echo "" >> "$MGT_PROJECT_PATH/$category/$task_id"
-        echo "# Long description" >> "$MGT_PROJECT_PATH/$category/$task_id"
-        $EDITOR "$MGT_PROJECT_PATH/$category/$task_id"
-        if [ $? -ne 0 ]; then
-            ### TODO: improve testing, maybe we should decrease $MGT_CONF_PATH/task_id
-            rm -f "$MGT_PROJECT_PATH/$category/$task_id"
-            exit 1
-        fi
-        sed -i -e '/^\s*#.*$/d' "$MGT_PROJECT_PATH/$category/$task_id"
-        $GIT add "$MGT_CONF_PATH/task_id" "$MGT_PROJECT_PATH/$category/$task_id"
-        $GIT commit -s -m "$(cat $MGT_CONF_PATH/project): add: $category/$task_id" -m "$description"
-        echo "Task: $category/$task_id added successfully"
+        mgt_task_add "$@"
         ;;
 
     mv)
