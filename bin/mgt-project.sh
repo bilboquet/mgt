@@ -107,7 +107,7 @@ case $1 in
 
     init)
         shift
-        mgt_project_init $@
+        mgt_project_init "$@"
         ;;
 
     list)
@@ -117,7 +117,7 @@ case $1 in
 
     select)
         shift
-        mgt_project_select $@
+        mgt_project_select "$@"
         
         ;;
 
