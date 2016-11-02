@@ -29,7 +29,9 @@ create_initial_users() {
 
 create_initial_categories() {
     echo "todo:Todo:*" >> $1
+    mkdir -p $MGT_PROJECT_PATH/"todo"
     echo "done:Done:" >> $1
+    mkdir -p $MGT_PROJECT_PATH/"done"
 }
 
 if [ -z "$1" ]; then
