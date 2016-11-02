@@ -6,36 +6,56 @@ if [ ! -e ~/.mgtconfig ]; then
     mgt init --new
 fi
 
-sed -i -e 's#MGT_PATH=~/.mgt.*#MGT_PATH=~/.mgt-test#' ~/.mgtconfig
+# test setup
+rm -rf /tmp/test.git && pushd . && mkdir -p /tmp/test.git && cd /tmp/test.git && git init --bare && popd
+sed -i -e 's#MGT_PATH=~/.mgt.*#MGT_PATH=/tmp/mgt-test#' ~/.mgtconfig
 . ~/.mgtconfig
 
+REMOTE=/tmp/test.git
+
+
 # check_res "test_name" "expected result" "result" "command output"
-check_res () {
-    echo "$4" > "$1".out
+function check_res () {
+    mkdir -p "$1"
+    echo "$4" > "$1/out"
     
 #    diff -q "$1".out "$1".out.ref
+    check="0"
+    if [ -x "$1/check_test" ]; then
+        cmd="$1/check_test > /dev/null 2>&1 "
+        eval $cmd
+        check=$?
+    fi
     
-    if { [ "$2" == "ok" ] && [ ! "$3" == "0" ]; } ||
+    if { [ "$check" != "0" ]; } ||
+       { [ "$2" == "ok" ] && [ ! "$3" == "0" ]; } ||
        { [ "$2" == "nok" ] && [ "$3" == "0" ]; } ; then
         # ERROR
 
         while [ true ]; do
             echo ">> ERROR running test \"$1\""
-            echo "received $3 while $2 was awaited"
-            echo "sh(o)w output, (s)how diff, (u)pdate ref, (n)ext"
+            echo "received $3, $2 was awaited"
+            echo "check:$check"
+            echo "show (o)utput, show (d)iff, (r)un check, (u)pdate ref, (n)ext, (q)uit"
             read input
             case $input in
                 o)
-                    cat "$1".out
+                    cat "$1/out"
                     ;;
-                s|show)
-                    diff "$1".out "$1".out.ref
+                d)
+                    diff "$1/out" "$1/out.ref"
                     ;;
                 u)
-                    cp "$1".out "$1".out.ref
+                    cp "$1/out" "$1/out.ref"
                     ;;
                 ""|n|next)
                     break
+                    ;;
+                r)
+                    "$1/check_test"
+                    ;;
+                q)
+                    exit 0
                     ;;
                 *)
                     ;;
@@ -48,7 +68,7 @@ check_res () {
 }
 
 #do_test [-i] "test_name" "expected result: ok|nok" "test command" ["command sequence"]
-do_test () {
+function do_test () {
     interactive=''
     if [ "$1" == "-i" ]; then
         shift
@@ -89,21 +109,21 @@ echo "#### Warning, this test will remove $MGT_PATH ####"
 echo "##################################################"
 echo "Press enter to continue or C^c to quit"
 #if false; then # jump to #end jump
-read
-
-#rm -rf $MGT_PATH
-#do_test "1" "ok" "mgt init -r https://github.com/bilboquet/test.git"
-#
-#rm -rf $MGT_PATH
-#do_test "2" "nok" "mgt init"
-#
-#do_test "3" "ok" "mgt init --new"
-#
-#rm -rf $MGT_PATH
-#do_test "4" "ok" "mgt init --new -r https://github.com/bilboquet/test.git"
+#read
 
 rm -rf $MGT_PATH
-do_test "5" "ok" "mgt init -n -r https://github.com/bilboquet/test.git --force"
+do_test "1" "ok" "mgt init -r $REMOTE"
+
+rm -rf $MGT_PATH
+do_test "2" "nok" "mgt init"
+
+do_test "3" "ok" "mgt init --new"
+
+rm -rf $MGT_PATH
+do_test "4" "ok" "mgt init --new -r $REMOTE"
+
+rm -rf $MGT_PATH
+do_test "5" "ok" "mgt init -n -r $REMOTE --force"
 
 do_test "6" "nok" "mgt project init"
 
@@ -130,15 +150,15 @@ seq=$'s\nh\na\nh\nq'
 do_test "9.5" "ok" "mgt task search -i" "$seq"
 
 do_test "9.6" "ok" "mgt task search -f Assignee=Jean"
-#sync needs to be fixed !
-#do_test "9.7" "ok" "mgt project sync"
+
+do_test "9.7" "ok" "mgt project sync"
 
 do_test "9.8" "ok" "mgt project select test_proj1"
 
 seq=$'\030'
 do_test "9.9" "ok" "mgt task add -c todo -d description" "$seq"
 
-#do_test "9.10" "ok" "mgt project sync"
+do_test "9.10" "ok" "mgt project sync"
 
 seq=$'\030'
 do_test "9.11" "ok" "mgt task add -c todo -d description" "$seq"
@@ -161,4 +181,5 @@ do_test "9.17" "ok" "mgt task depends -c todo -t 1 -o 6 --ndep \"2,3,4\""
 
 
 #### end of tests
+rm -rf /tmp/test.git /tmp/mgt-test
 #sed -i -e 's#MGT_PATH=~/.mgt-test.*#MGT_PATH=~/.mgt#' ~/.mgtconfig
