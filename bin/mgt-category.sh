@@ -13,6 +13,7 @@ usage_category () {
 
 if [ -z "$1" ]; then
     usage_category
+    exit 1
 fi
 
 case "$1" in
@@ -29,22 +30,23 @@ case "$1" in
         eval set -- "$argv"
         while true; do
             case "$1" in
-                c)
+                -c)
                     category="$2"
                     shift
                     ;;
-                l)
+                -l)
                     label="$2"
                     shift
                     ;;
-                d)
+                -d)
                     default='*'
                     ;;
                 --)
                     break
                     ;;
                 *)
-                    usage_category_add
+#                    usage_category_add
+                    usage_category
                     exit 1
             esac
             shift
@@ -72,7 +74,7 @@ case "$1" in
         exit 0
         ;;
     *)
-        usage
+        usage_category
         exit 1
         ;;
 esac
