@@ -52,7 +52,8 @@ case "$1" in
             shift
         done
         
-        mkdir -p $MGT_PROJECT_PATH/$category
+        mkdir -p "$MGT_PROJECT_PATH/$category"
+        touch "$MGT_PROJECT_PATH/$category/.gitignore"
         if [ "$default" == "\*" ]; then
             ### Remove previous default category
             sed -i 's/\*//g' $MGT_CONF_PATH/categories

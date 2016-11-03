@@ -23,7 +23,7 @@ function create_initial_tags() {
     echo "helpwanted:Help Wanted" >> "$1"
 }
 
-function create_initial_users() {
+function create_initial_users () {
     echo "$(whoami):$(git config user.name) <$(git config user.email)>" > "$1"
 }
 
@@ -39,10 +39,11 @@ fi
 function mgt_project_init () {
     if [ -z "$1" ]; then
         echo "Project <name> cannot be empty"
+        usage_project
         exit 1
     fi
 
-    $GIT checkout -b "$1" #$trac
+    $GIT checkout -b "$1"
     if [ $? -ne 0 ]; then
         exit 1
     fi
@@ -54,7 +55,7 @@ function mgt_project_init () {
     create_initial_users $MGT_CONF_PATH/users
     create_initial_categories $MGT_CONF_PATH/categories
     echo -n "0" >  $MGT_CONF_PATH/task_id
-    $GIT add .
+    $GIT add -v "$MGT_PATH"
     $GIT commit -s -m "Project: create project '$1'"
 
     remote=$($GIT remote | grep origin)
@@ -65,7 +66,6 @@ function mgt_project_init () {
 }
 
 function mgt_project_select () {
-    set -x
     $GIT checkout "$1"
     ret_val=$?
     remote=$($GIT remote | grep origin)
@@ -76,7 +76,7 @@ function mgt_project_select () {
     exit $ret_val
 }
 
-mgt_project_sync () {
+function mgt_project_sync () {
     remote=$($GIT remote | grep origin)
     if [ ! -z "$remote" ]; then
         $GIT pull --rebase origin $(basename $(cat $MGT_PATH/.git/HEAD | sed 's!.*: \(.*\)!\1!'))
@@ -87,9 +87,8 @@ mgt_project_sync () {
             exit $ret_val
         fi
         $GIT push origin $(basename $(cat $MGT_PATH/.git/HEAD | sed 's!.*: \(.*\)!\1!'))
-        exit $?
     else
-        usage_project
+    echo "No <remote> defined, you can't sync."
         exit 1
     fi
 }
