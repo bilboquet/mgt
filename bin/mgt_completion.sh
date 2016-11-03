@@ -9,7 +9,7 @@ _mgt_project_select () {
 _mgt_project () {
     local opts cur
     cur=${COMP_WORDS[COMP_CWORD]}
-    opts="-h --help init list select sync"
+    opts="-h --help init list select sync history"
     case "${COMP_WORDS[2]}" in
         -h|--help)
             ;;

@@ -11,6 +11,7 @@ usage_project () {
     echo "       mgt project list"
     echo "       mgt project select <name>"
     echo "       mgt project sync"
+    echo "       mgt project history"
 }
 
 function create_initial_tags() {
@@ -93,6 +94,9 @@ function mgt_project_sync () {
     fi
 }
 
+function mgt_project_history () {
+    $GIT log
+}
 case $1 in
     -h|--help)
         usage_project
@@ -117,6 +121,9 @@ case $1 in
 
     sync)
         mgt_project_sync
+        ;;
+    history)
+        mgt_project_history
         ;;
 
     --)
