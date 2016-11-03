@@ -72,9 +72,17 @@ _mgt_taskid () {
             break
         fi
     done
-    local tasks=$(mgt task search $category | sed -e 's@.*/\([0-9]*\):.*$@\1@')
+    
+    grep_filter='.'
+    if [ ! -z ${cur} ]; then
+        grep_filter=${cur}
+    fi
+    echo
+    echo "Task id : description"
+    mgt task search $category | grep -e "${category/-c /}/$grep_filter"
+    echo "Task id below for completion, you may need to hit <TAB> again."
+    local tasks=$(mgt task search $category | sed -e 's@.*/\([-0-9a-z]*\):.*$@\1@')
     COMPREPLY=( $( compgen -W "$tasks" -- ${cur} ) )
-    set +x
     return 0
 }
 

@@ -247,7 +247,8 @@ function mgt_task_add () {
                 if exist_category "$2"; then
                     category="$2"
                 else
-                    exit 1
+                    # will use default category
+                    unset category
                 fi
                 ;;
             -T|--tags)
@@ -274,7 +275,7 @@ function mgt_task_add () {
 
     if [ -z "$category" ]; then
         category=$(grep -e \* $MGT_CONF_PATH/categories | cut -f 1 -d':')
-        echo "$category"
+        echo "using defaul category: $category"
     fi
     if [ -z "$description" ]; then
         usage_task
@@ -282,12 +283,13 @@ function mgt_task_add () {
         exit 1
     fi
 
-    task_id=$(expr $(cat $MGT_CONF_PATH/task_id) + 1)
+#    task_id=$(expr $(cat $MGT_CONF_PATH/task_id) + 1)
+    task_id=$(uuidgen -t)
     if [ -z $task_id ]; then
-        echo "Error getting task id, check $MGT_CONF_PATH/task_id and configuration."
+        echo "Error getting task id, check that uuidgen is in your PATH."
         exit 1
     fi
-    echo -n "$task_id" > $MGT_CONF_PATH/task_id
+#    echo -n "$task_id" > $MGT_CONF_PATH/task_id
     mkdir -p "$MGT_PROJECT_PATH/$category"
     echo "Task-Id: $task_id" > "$MGT_PROJECT_PATH/$category/$task_id"
     echo "Author: $(git config user.name) <$(git config user.email)>" >> "$MGT_PROJECT_PATH/$category/$task_id"

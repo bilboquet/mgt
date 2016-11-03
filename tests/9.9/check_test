@@ -5,7 +5,8 @@ set -x
 [ -d "$MGT_PROJECT_PATH" ] || exit 1
 [ -d "$MGT_PROJECT_PATH/done" ] || exit 1
 [ -d "$MGT_PROJECT_PATH/todo" ] || exit 1
-[ -f "$MGT_PROJECT_PATH/todo/1" ] || exit 1
-[ -f "$MGT_PROJECT_PATH/todo/2" ] || exit 1
+# 2 tasks are in todo
+[ "$(ls "$MGT_PROJECT_PATH/todo/" | wc -l)" == "2" ] || exit 1
+
 
 exit 0

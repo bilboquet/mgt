@@ -5,6 +5,6 @@ set -x
 [ -d "$MGT_PROJECT_PATH" ] || exit 1
 [ -d "$MGT_PROJECT_PATH/done" ] || exit 1
 [ -d "$MGT_PROJECT_PATH/todo" ] || exit 1
-[ -f "$MGT_PROJECT_PATH/todo/1" ] || exit 1
+[ "$(ls "$MGT_PROJECT_PATH/todo/" | wc -l)" == "1" ] || exit 1
 
 exit 0

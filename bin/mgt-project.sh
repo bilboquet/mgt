@@ -55,7 +55,6 @@ function mgt_project_init () {
     create_initial_tags $MGT_CONF_PATH/tags
     create_initial_users $MGT_CONF_PATH/users
     create_initial_categories $MGT_CONF_PATH/categories
-    echo -n "0" >  $MGT_CONF_PATH/task_id
     $GIT add -v "$MGT_PATH"
     $GIT commit -s -m "Project: create project '$1'"
 
