@@ -18,6 +18,7 @@ usage_task () {
     echo "       mgt task edit -c <category> --task <task_id>"
     echo "       mgt task assign -c <category> --task <task_id> -u <username <user@server>>"
     echo "       mgt task rm --task <task_id>"
+    echo "       mgt task history -c <category> --task <task_id>"
     echo "       mgt task --help"
 }
 
@@ -676,6 +677,43 @@ function mgt_task_remaining () {
     exit $?
 }
 
+function mgt_task_history () {
+    set -x
+    argv=$(getopt -o c:t: -l category:,task: -- "$@")
+    eval set -- "$argv"
+    while [ true ]; do
+        ### TODO: Validate arguments
+        case "$1" in
+            -c|--category)
+                if exist_category "$2"; then
+                    category="$2"
+                else
+                    exit 1
+                fi
+                ;;
+            -t|--task)
+                if exist_task "$2"; then
+                    task_id="$2"
+                else
+                    echo "mgt: task: '$2' not found"
+                    exit 1
+                fi
+                ;;
+            --)
+                shift
+                break
+                ;;
+            *)
+                usage_task
+                break
+                ;;
+        esac
+        shift 2
+    done
+    $GIT log "$MGT_PROJECT_PATH/$category/$task_id"
+    exit $?
+}
+
 if [ -z "$1" ]; then
     usage_task
 fi
@@ -727,7 +765,11 @@ case $1 in
         shift
         mgt_task_remaining "$@"
         ;;
-    comment)
+    history)
+        shift
+        mgt_task_history "$@"
+        ;;
+        comment)
         ### TODO: use git-notes
         ;;
     *)

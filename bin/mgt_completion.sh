@@ -121,11 +121,40 @@ _mgt_task_depends () {
     COMPREPLY=( $( compgen -W "${opts}" -- ${cur} ) )
     return 0
 }
+_mgt_task_history () {
+    local cur prev opts
+    cur=${COMP_WORDS[COMP_CWORD]}
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    opts="-c --category -t --task"
 
+    # filter used options
+    if [[ "$COMP_LINE" == *" --category "* ||  "$COMP_LINE" == *" -c "* ]]; then
+        opts="${opts/--category}"
+        opts="${opts/-c}"
+    fi
+    if [[ "$COMP_LINE" == *" --task "* ||  "$COMP_LINE" == *" -t "* ]]; then
+        opts="${opts/--task}"
+        opts="${opts/-t}"
+    fi
+
+    case "$prev" in
+        -o|--on|-t|--task|--ndep)
+            _mgt_taskid
+            return 0
+            ;;
+        -c|--category)
+            _mgt_category
+            return 0
+            ;;
+    esac
+
+    COMPREPLY=( $( compgen -W "${opts}" -- ${cur} ) )
+    return 0
+}
 _mgt_task () {
     local opts cur
     cur=${COMP_WORDS[COMP_CWORD]}
-    opts="-h --help search add mv edit assign rm depends"
+    opts="-h --help search add mv edit assign rm depends history"
     case "${COMP_WORDS[2]}" in
         -h|--help)
             ;;
@@ -144,6 +173,9 @@ _mgt_task () {
             ;;
         depends)
             _mgt_task_depends
+            ;;
+        history)
+            _mgt_task_history
             ;;
         *)
             COMPREPLY=( $( compgen -W "${opts}" -- ${cur} ) )
