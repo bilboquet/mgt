@@ -12,7 +12,7 @@ find_category() {
 }
 
 usage_task () {
-    echo "usage: mgt task search [--filter <criteria>] [-i --interactive]"
+    echo "usage: mgt task search [--category <category>] [--filter <criteria>] [--sort <criteria>] [-i --interactive]"
     echo "       mgt task add [-c <category=todo>] [-T <tag_comma_separated_list>] -d <description>"
     echo "       mgt task mv --from <category> --to <category> --task <task_id>"
     echo "       mgt task edit -c <category> --task <task_id>"
@@ -35,6 +35,7 @@ usage_task_search() {
     echo "  Options:"
     echo "    -c,--category <category> Search in <category>"
     echo "    -f,--filter <filter>     Filtering criteria"
+    echo "    -s,--sort <criteria>     Sort criteria"
     echo "    -i,--interactive         Interactive search"
 }
 
@@ -181,6 +182,9 @@ function mgt_task_search () {
             -i|--interactive)
                 interactive=1
                 ;;
+            -s|--sort)
+                sort_criteria="$2"
+                ;;
             --)
                 shift
                 break
@@ -197,6 +201,10 @@ function mgt_task_search () {
         # in case of empty filter, add a "match all" filter
         grep_filter="-e \"Description: \""
     fi 
+    if [ -z "$sort_criteria" ]; then
+    ### TODO : finish sort implementation
+        sort_criteria="Date"
+    fi
     cmd="grep -iHr $grep_filter $MGT_PROJECT_PATH/$category | sed 's!$MGT_PROJECT_PATH/\([^: ]*\):.*!\1!g' | sort -u"
     eval task_list=\$\($cmd\)
     
@@ -283,13 +291,11 @@ function mgt_task_add () {
         exit 1
     fi
 
-#    task_id=$(expr $(cat $MGT_CONF_PATH/task_id) + 1)
     task_id=$(uuidgen -t)
     if [ -z $task_id ]; then
         echo "Error getting task id, check that uuidgen is in your PATH."
         exit 1
     fi
-#    echo -n "$task_id" > $MGT_CONF_PATH/task_id
     mkdir -p "$MGT_PROJECT_PATH/$category"
     echo "Task-Id: $task_id" > "$MGT_PROJECT_PATH/$category/$task_id"
     echo "Author: $(git config user.name) <$(git config user.email)>" >> "$MGT_PROJECT_PATH/$category/$task_id"
@@ -309,7 +315,7 @@ function mgt_task_add () {
         exit 1
     fi
     sed -i -e '/^\s*#.*$/d' "$MGT_PROJECT_PATH/$category/$task_id"
-    $GIT add "$MGT_CONF_PATH/task_id" "$MGT_PROJECT_PATH/$category/$task_id"
+    $GIT add "$MGT_PROJECT_PATH/$category/$task_id"
     $GIT commit -s -m "$(cat $MGT_CONF_PATH/project): add: $category/$task_id" -m "$description"
     echo "Task: $category/$task_id added successfully"
 }
