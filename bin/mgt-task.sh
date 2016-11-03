@@ -117,6 +117,125 @@ function exist_task () {
     return 1
 }
 
+function mgt_task_view () {
+    argv=$(getopt -o c:t: -l category:,task: -- "$@")
+    eval set -- "$argv"
+    while [ true ]; do
+        case "$1" in
+            -c|--category)
+                if exist_category "$2"; then
+                    category="$2"
+                else
+                    exit 1
+                fi
+                ;;
+            -t|--task)
+                if exist_task "$2"; then
+                    task_id="$2"
+                else
+                    echo "mgt: task: '$2' not found"
+                    exit 1
+                fi
+                ;;
+            --)
+                shift
+                break
+                ;;
+            *)
+                usage_task_view
+                exit 1
+                ;;
+        esac
+        shift 2
+    done
+
+    if ! exist_task_in_cat $task_id $category ; then
+        exit 1
+    fi
+
+    cat "$MGT_PROJECT_PATH/$category/$task_id"
+    exit $?
+}
+function mgt_task_search () {
+    grep_filter=""
+    argv=$(getopt -o f:c:ia -l filter:,category:,interactive -- "$@")
+    eval set -- "$argv"
+    while [ true ]; do
+        case "$1" in
+            -c|--category)
+                if exist_category "$2"; then
+                    category="$2"
+                else
+                    exit 1
+                fi
+                shift
+                ;;
+            -f|--filter)
+                keyword=$(echo "$2" | sed -s 's/\(.*\)=.*/\1/')
+                value=$(echo "$2" | sed -s 's/.*=\(.*\)/\1/')
+                ### TODO: decide if we want an OR or AND filter
+                grep_filter="$grep_filter -e \"$keyword: .*$value\""
+                shift
+                ;;
+            -i|--interactive)
+                interactive=1
+                ;;
+            --)
+                shift
+                break
+                ;;
+            *)
+                usage_task_search
+                exit 1
+                ;;
+        esac
+        shift
+    done
+
+    if [ -z "$grep_filter" ]; then
+        # in case of empty filter, add a "match all" filter
+        grep_filter="-e \"Description: \""
+    fi 
+    cmd="grep -iHr $grep_filter $MGT_PROJECT_PATH/$category | sed 's!$MGT_PROJECT_PATH/\([^: ]*\):.*!\1!g' | sort -u"
+    eval task_list=\$\($cmd\)
+    
+    for task in $task_list; do
+        grep_filter="Description: "
+        cmd="grep -e $grep_filter $MGT_PROJECT_PATH/$task | sed 's!$grep_filter!!'"
+        eval task_details=\$\($cmd\)
+        echo "##" $task": "$task_details
+        if [ ! -z $interactive ]; then
+            while [ true ]; do
+                echo
+                echo "(q)uit, (n)ext, (s)how details, (a)ssign to me, (h)istory."
+                read input
+                case $input in
+                    q|quit)
+                        break 2
+                        ;;
+                    ""|n|next)
+                        break
+                        ;;
+                    s|show)
+                        echo "######################################"
+                        cat $MGT_PROJECT_PATH/$task
+                        echo "######################################"
+                        ;;
+                    a)
+                        mgt task assign -c ${task%/*} --task ${task##*/} -u "$(git config user.name) <$(git config user.email)>"
+                        ;;
+                    h|history)
+                        $GIT log $MGT_PROJECT_PATH/$task
+                        ;;
+                    *)
+                        ;;
+                esac
+            done
+        fi
+    done
+    exit $?
+}
+
 function mgt_task_add () {
     argv=$(getopt -o c:T:d: -l category:,tags:,description: -- "$@")
     eval set -- "$argv"
@@ -190,6 +309,186 @@ function mgt_task_add () {
     $GIT add "$MGT_CONF_PATH/task_id" "$MGT_PROJECT_PATH/$category/$task_id"
     $GIT commit -s -m "$(cat $MGT_CONF_PATH/project): add: $category/$task_id" -m "$description"
     echo "Task: $category/$task_id added successfully"
+}
+
+function mgt_task_mv () {
+argv=$(getopt -o t: -l task:,to:,from: -- "$@")
+eval set -- "$argv"
+while [ true ]; do
+    ### TODO: Validate arguments
+    case "$1" in
+        --from)
+            if exist_category "$2"; then
+                from="$2"
+            else
+                exit 1
+            fi
+            ;;
+        --to)
+            if exist_category "$2"; then
+                to="$2"
+            else
+                exit 1
+            fi
+            ;;
+        -t|--task)
+            if exist_task "$2"; then
+                task_id="$2"
+            else
+                echo "mgt: task: '$2' not found"
+                exit 1
+            fi
+            ;;
+        --)
+            shift
+            break
+            ;;
+        *)
+            usage_task_mv
+            exit 1
+            ;;
+    esac
+    shift 2
+done
+
+if ! exist_task_in_cat $task_id $from ; then
+    exit 1
+fi
+if [ ! -d "$MGT_PROJECT_PATH/$to" ]; then
+    echo "mgt: category: '$to' does not exists."
+    exit 1
+fi
+
+$GIT mv "$MGT_PROJECT_PATH/$from/$task_id" "$MGT_PROJECT_PATH/$to"
+$GIT commit -s -m "$(cat $MGT_CONF_PATH/project): move: '$from/$task_id' => '$to/$task_id'"
+exit $?
+}
+
+function mgt_task_edit () {
+argv=$(getopt -o c:t: -l category:,task: -- "$@")
+eval set -- "$argv"
+while [ true ]; do
+
+    ### TODO: Validate arguments
+    case "$1" in
+        -c|--category)
+            if exist_category "$2"; then
+                category="$2"
+            else
+                exit 1
+            fi
+            ;;
+        -t|--task)
+            if exist_task "$2"; then
+                task_id="$2"
+            else
+                echo "mgt: task: '$2' not found"
+                exit 1
+            fi
+            break
+            ;;
+        *)
+            usage_task_edit
+            exit 1
+            ;;
+    esac
+    shift 2
+done
+
+if ! exist_task_in_cat $task_id $category ; then
+    exit 1
+fi
+
+$EDITOR "$MGT_PROJECT_PATH/$category/$task_id"
+$GIT add "$MGT_PROJECT_PATH/$category/$task_id"
+$GIT commit -s -m "$(cat $MGT_CONF_PATH/project): edit: $category/$task_id"
+exit $?
+}
+
+function mgt_task_rm () {
+### TODO: rewrite using getopt
+    while [ true ]; do
+        shift
+        case $1 in
+            -c|--category)
+                if exist_category "$2"; then
+                    category="$2"
+                else
+                    exit 1
+                fi
+                ;;
+            --task)
+                shift
+                if exist_task "$1"; then
+                    task_id="$1"
+                else
+                    echo "mgt: task: '$1' not found"
+                    exit 1
+                fi
+                break
+                ;;
+            *)
+                echo "mgt: task: unknown option '$1'"
+                break
+                ;;
+        esac
+        shift
+    done
+
+    if ! exist_task_in_cat $task_id $category ; then
+        exit 1
+    fi
+
+    $GIT rm "$MGT_PROJECT_PATH/$category/$task_id"
+    $GIT commit -s -m "$(cat $MGT_CONF_PATH/project): remove: $category/$task_id"
+    exit $?
+}
+
+function mgt_task_assign () {
+argv=$(getopt -o c:t:u: -l category:,task:,username: -- "$@")
+eval set -- "$argv"
+while [ true ]; do
+    ### TODO: Validate arguments
+    case "$1" in
+        -c|--category)
+            if exist_category "$2"; then
+                category="$2"
+            else
+                exit 1
+            fi
+            ;;
+        -t|--task)
+            if exist_task "$2"; then
+                task_id="$2"
+            else
+                echo "mgt: task: '$2' not found"
+                exit 1
+            fi
+            ;;
+        -u|--username)
+            username="$2"
+            break
+            ;;
+        --)
+            shift
+            break
+            ;;
+        *)
+            usage_task_assign
+            break
+            ;;
+    esac
+    shift 2
+done
+
+if ! exist_task_in_cat $task_id $category ; then
+    exit 1
+fi
+
+sed -i "s/Assignee:\(.*\)/Assignee: $username/" $MGT_PROJECT_PATH/$category/$task_id
+$GIT add "$MGT_PROJECT_PATH/$category/$task_id"
+$GIT commit -s -m "$(cat $MGT_CONF_PATH/project): assign: $category/$task_id to $username"
+    exit $?
 }
 
 function mgt_task_depends () {
@@ -283,6 +582,99 @@ function mgt_task_depends () {
     exit $?
 }
 
+function mgt_task_estimate () {
+    argv=$(getopt -o c:t:e: -l category:,task:,estimation: -- "$@")
+    eval set -- "$argv"
+    while [ true ]; do
+        ### TODO: Validate arguments
+        case "$1" in
+            -c|--category)
+                if exist_category "$2"; then
+                    category="$2"
+                else
+                    exit 1
+                fi
+                ;;
+            -t|--task)
+                if exist_task "$2"; then
+                    task_id="$2"
+                else
+                    echo "mgt: task: '$2' not found"
+                    exit 1
+                fi
+                ;;
+            -e|--estimation)
+                estimation="$2"
+                break
+                ;;
+            --)
+                shift
+                break
+                ;;
+            *)
+                usage_task_estimate
+                break
+                ;;
+        esac
+        shift 2
+    done
+
+    if ! exist_task_in_cat $task_id $category ; then
+        exit 1
+    fi
+
+    sed -i "s/Estimation:\(.*\)/Estimation: $estimation/" $MGT_PROJECT_PATH/$category/$task_id
+    $GIT add "$MGT_PROJECT_PATH/$category/$task_id"
+    $GIT commit -s -m "$(cat $MGT_CONF_PATH/project): estimation: Estimate for $category/$task_id is $estimation"
+    exit $?
+}
+
+function mgt_task_remaining () {
+    argv=$(getopt -o c:t:r: -l category:,task:,remaining: -- "$@")
+    eval set -- "$argv"
+    while [ true ]; do
+        ### TODO: Validate arguments
+        case "$1" in
+            -c|--category)
+                if exist_category "$2"; then
+                    category="$2"
+                else
+                    exit 1
+                fi
+                ;;
+            -t|--task)
+                if exist_task "$2"; then
+                    task_id="$2"
+                else
+                    echo "mgt: task: '$2' not found"
+                    exit 1
+                fi
+                ;;
+            -r|--remaining)
+                remaining="$2"
+                break
+                ;;
+            --)
+                shift
+                break
+                ;;
+            *)
+                usage_task_remaining
+                break
+                ;;
+        esac
+        shift 2
+    done
+
+    if ! exist_task_in_cat $task_id $category ; then
+        exit 1
+    fi
+
+    sed -i "s/Remaining:\(.*\)/Remaining: $remaining/" $MGT_PROJECT_PATH/$category/$task_id
+    $GIT add "$MGT_PROJECT_PATH/$category/$task_id"
+    $GIT commit -s -m "$(cat $MGT_CONF_PATH/project): remaining: Remaining for $category/$task_id is $remaining"
+    exit $?
+}
 
 if [ -z "$1" ]; then
     usage_task
@@ -293,419 +685,51 @@ case $1 in
         usage_task
         exit 0
         ;;
-
     view)
         shift
-        argv=$(getopt -o c:t: -l category:,task: -- "$@")
-        eval set -- "$argv"
-        while [ true ]; do
-            case "$1" in
-                -c|--category)
-                    if exist_category "$2"; then
-                        category="$2"
-                    else
-                        exit 1
-                    fi
-                    ;;
-                -t|--task)
-                    if exist_task "$2"; then
-                        task_id="$2"
-                    else
-                        echo "mgt: task: '$2' not found"
-                        exit 1
-                    fi
-                    ;;
-                --)
-                    shift
-                    break
-                    ;;
-                *)
-                    usage_task_view
-                    exit 1
-                    ;;
-            esac
-            shift 2
-        done
-
-        if ! exist_task_in_cat $task_id $category ; then
-            exit 1
-        fi
-
-        cat "$MGT_PROJECT_PATH/$category/$task_id"
+        mgt_task_view "$@"
         ;;
-
     search)
         shift # consume list
-        grep_filter=""
-        argv=$(getopt -o f:c:ia -l filter:,category:,interactive -- "$@")
-        eval set -- "$argv"
-        while [ true ]; do
-            case "$1" in
-                -c|--category)
-                    if exist_category "$2"; then
-                        category="$2"
-                    else
-                        exit 1
-                    fi
-                    shift
-                    ;;
-                -f|--filter)
-                    keyword=$(echo "$2" | sed -s 's/\(.*\)=.*/\1/')
-                    value=$(echo "$2" | sed -s 's/.*=\(.*\)/\1/')
-                    ### TODO: decide if we want an OR or AND filter
-                    grep_filter="$grep_filter -e \"$keyword: .*$value\""
-                    shift
-                    ;;
-                -i|--interactive)
-                    interactive=1
-                    ;;
-                --)
-                    shift
-                    break
-                    ;;
-                *)
-                    usage_task_search
-                    exit 1
-                    ;;
-            esac
-            shift
-        done
-
-        if [ -z "$grep_filter" ]; then
-            # in case of empty filter, add a "match all" filter
-            grep_filter="-e \"Description: \""
-        fi 
-        cmd="grep -iHr $grep_filter $MGT_PROJECT_PATH/$category | sed 's!$MGT_PROJECT_PATH/\([^: ]*\):.*!\1!g' | sort -u"
-        eval task_list=\$\($cmd\)
-        
-        for task in $task_list; do
-            grep_filter="Description: "
-            cmd="grep -e $grep_filter $MGT_PROJECT_PATH/$task | sed 's!$grep_filter!!'"
-            eval task_details=\$\($cmd\)
-            echo "##" $task": "$task_details
-            if [ ! -z $interactive ]; then
-                while [ true ]; do
-                    echo
-                    echo "(q)uit, (n)ext, (s)how details, (a)ssign to me, (h)istory."
-                    read input
-                    case $input in
-                        q|quit)
-                            break 2
-                            ;;
-                        ""|n|next)
-                            break
-                            ;;
-                        s|show)
-                            echo "######################################"
-                            cat $MGT_PROJECT_PATH/$task
-                            echo "######################################"
-                            ;;
-                        a)
-                            mgt task assign -c ${task%/*} --task ${task##*/} -u "$(git config user.name) <$(git config user.email)>"
-                            ;;
-                        h|history)
-                            $GIT log $MGT_PROJECT_PATH/$task
-                            ;;
-                        *)
-                            ;;
-                    esac
-                done
-            fi
-        done
+        mgt_task_search "$@"
         ;;
-
     add)
         shift
         mgt_task_add "$@"
         ;;
-
     mv)
         shift
-        argv=$(getopt -o t: -l task:,to:,from: -- "$@")
-        eval set -- "$argv"
-        while [ true ]; do
-            ### TODO: Validate arguments
-            case "$1" in
-                --from)
-                    if exist_category "$2"; then
-                        from="$2"
-                    else
-                        exit 1
-                    fi
-                    ;;
-                --to)
-                    if exist_category "$2"; then
-                        to="$2"
-                    else
-                        exit 1
-                    fi
-                    ;;
-                -t|--task)
-                    if exist_task "$2"; then
-                        task_id="$2"
-                    else
-                        echo "mgt: task: '$2' not found"
-                        exit 1
-                    fi
-                    ;;
-                --)
-                    shift
-                    break
-                    ;;
-                *)
-                    usage_task_mv
-                    exit 1
-                    ;;
-            esac
-            shift 2
-        done
-
-        if ! exist_task_in_cat $task_id $from ; then
-            exit 1
-        fi
-        if [ ! -d "$MGT_PROJECT_PATH/$to" ]; then
-            echo "mgt: category: '$to' does not exists."
-            exit 1
-        fi
-
-        $GIT mv "$MGT_PROJECT_PATH/$from/$task_id" "$MGT_PROJECT_PATH/$to"
-        $GIT commit -s -m "$(cat $MGT_CONF_PATH/project): move: '$from/$task_id' => '$to/$task_id'"
+        mgt_task_mv "$@"
         ;;
-
     edit)
         shift
-
-        argv=$(getopt -o c:t: -l category:,task: -- "$@")
-        eval set -- "$argv"
-        while [ true ]; do
-
-            ### TODO: Validate arguments
-            case "$1" in
-                -c|--category)
-                    if exist_category "$2"; then
-                        category="$2"
-                    else
-                        exit 1
-                    fi
-                    ;;
-                -t|--task)
-                    if exist_task "$2"; then
-                        task_id="$2"
-                    else
-                        echo "mgt: task: '$2' not found"
-                        exit 1
-                    fi
-                    break
-                    ;;
-                *)
-                    usage_task_edit
-                    exit 1
-                    ;;
-            esac
-            shift 2
-        done
-
-        if ! exist_task_in_cat $task_id $category ; then
-            exit 1
-        fi
-
-        $EDITOR "$MGT_PROJECT_PATH/$category/$task_id"
-        $GIT add "$MGT_PROJECT_PATH/$category/$task_id"
-        $GIT commit -s -m "$(cat $MGT_CONF_PATH/project): edit: $category/$task_id"
+        mgt_task_edit "$@"
         ;;
-
     rm)
-    ### TODO: rewrite using getopt
-        while [ true ]; do
-            shift
-            case $1 in
-                -c|--category)
-                    if exist_category "$2"; then
-                        category="$2"
-                    else
-                        exit 1
-                    fi
-                    ;;
-                --task)
-                    shift
-                    if exist_task "$1"; then
-                        task_id="$1"
-                    else
-                        echo "mgt: task: '$1' not found"
-                        exit 1
-                    fi
-                    break
-                    ;;
-                *)
-                    echo "mgt: task: unknown option '$1'"
-                    break
-                    ;;
-            esac
-            shift
-        done
-
-        if ! exist_task_in_cat $task_id $category ; then
-            exit 1
-        fi
-
-        $GIT rm "$MGT_PROJECT_PATH/$category/$task_id"
-        $GIT commit -s -m "$(cat $MGT_CONF_PATH/project): remove: $category/$task_id"
+        mgt_task_rm "$@"
         ;;
-
     assign)
         shift
-        argv=$(getopt -o c:t:u: -l category:,task:,username: -- "$@")
-        eval set -- "$argv"
-        while [ true ]; do
-            ### TODO: Validate arguments
-            case "$1" in
-                -c|--category)
-                    if exist_category "$2"; then
-                        category="$2"
-                    else
-                        exit 1
-                    fi
-                    ;;
-                -t|--task)
-                    if exist_task "$2"; then
-                        task_id="$2"
-                    else
-                        echo "mgt: task: '$2' not found"
-                        exit 1
-                    fi
-                    ;;
-                -u|--username)
-                    username="$2"
-                    break
-                    ;;
-                --)
-                    shift
-                    break
-                    ;;
-                *)
-                    usage_task_assign
-                    break
-                    ;;
-            esac
-            shift 2
-        done
-
-        if ! exist_task_in_cat $task_id $category ; then
-            exit 1
-        fi
-
-        sed -i "s/Assignee:\(.*\)/Assignee: $username/" $MGT_PROJECT_PATH/$category/$task_id
-        $GIT add "$MGT_PROJECT_PATH/$category/$task_id"
-        $GIT commit -s -m "$(cat $MGT_CONF_PATH/project): assign: $category/$task_id to $username"
+        mgt_task_assign "$@"
         ;;
-
     depends)
         shift
         mgt_task_depends "$@"
         ;;
-
     tag)
         ### TODO: Edit task file
         ;;
-
     estimate)
         shift
-        argv=$(getopt -o c:t:e: -l category:,task:,estimation: -- "$@")
-        eval set -- "$argv"
-        while [ true ]; do
-            ### TODO: Validate arguments
-            case "$1" in
-                -c|--category)
-                    if exist_category "$2"; then
-                        category="$2"
-                    else
-                        exit 1
-                    fi
-                    ;;
-                -t|--task)
-                    if exist_task "$2"; then
-                        task_id="$2"
-                    else
-                        echo "mgt: task: '$2' not found"
-                        exit 1
-                    fi
-                    ;;
-                -e|--estimation)
-                    estimation="$2"
-                    break
-                    ;;
-                --)
-                    shift
-                    break
-                    ;;
-                *)
-                    usage_task_estimate
-                    break
-                    ;;
-            esac
-            shift 2
-        done
-
-        if ! exist_task_in_cat $task_id $category ; then
-            exit 1
-        fi
-
-        sed -i "s/Estimation:\(.*\)/Estimation: $estimation/" $MGT_PROJECT_PATH/$category/$task_id
-        $GIT add "$MGT_PROJECT_PATH/$category/$task_id"
-        $GIT commit -s -m "$(cat $MGT_CONF_PATH/project): estimation: Estimate for $category/$task_id is $estimation"
+        mgt_task_estimate "$@"
         ;;
-
     remaining)
         shift
-        argv=$(getopt -o c:t:r: -l category:,task:,remaining: -- "$@")
-        eval set -- "$argv"
-        while [ true ]; do
-            ### TODO: Validate arguments
-            case "$1" in
-                -c|--category)
-                    if exist_category "$2"; then
-                        category="$2"
-                    else
-                        exit 1
-                    fi
-                    ;;
-                -t|--task)
-                    if exist_task "$2"; then
-                        task_id="$2"
-                    else
-                        echo "mgt: task: '$2' not found"
-                        exit 1
-                    fi
-                    ;;
-                -r|--remaining)
-                    remaining="$2"
-                    break
-                    ;;
-                --)
-                    shift
-                    break
-                    ;;
-                *)
-                    usage_task_remaining
-                    break
-                    ;;
-            esac
-            shift 2
-        done
-
-        if ! exist_task_in_cat $task_id $category ; then
-            exit 1
-        fi
-
-        sed -i "s/Remaining:\(.*\)/Remaining: $remaining/" $MGT_PROJECT_PATH/$category/$task_id
-        $GIT add "$MGT_PROJECT_PATH/$category/$task_id"
-        $GIT commit -s -m "$(cat $MGT_CONF_PATH/project): remaining: Remaining for $category/$task_id is $remaining"
+        mgt_task_remaining "$@"
         ;;
-
     comment)
         ### TODO: use git-notes
         ;;
-
     *)
         usage_task
         exit 1
