@@ -13,4 +13,4 @@ uninstall:
 
 .PHONY: tests
 tests:
-	cd tests && test_mgt.sh
+	cd tests && ./test_mgt.sh

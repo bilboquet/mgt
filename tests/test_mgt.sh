@@ -99,7 +99,7 @@ function do_test () {
             eval $1 <<< "$2"
         fi
     fi
-    echo
+#    echo
 }
 
 
@@ -135,25 +135,32 @@ do_test "7.2" "ok" "mgt project init test_proj2"
 
 do_test "8" "ok" "mgt project list"
 
-#do_test "9" "ok" "mgt task search"
-#
-#do_test "9.1" "nok" "mgt task add"
-#
-#do_test "9.2" "nok" "mgt task add -c todo"
+do_test "9" "ok" "mgt task search"
+
+do_test "9.1" "nok" "mgt task add"
+
+do_test "9.2" "nok" "mgt task add -c todo"
 
 seq=$'\030' #Send ^X to nano editor so it closes 
 do_test "9.3" "ok" "mgt task add -c todo -d description" "$seq"
 
-#do_test "9.4" "ok" "mgt task search"
-#
-#seq=$'s\nh\na\nh\nq'
-#do_test "9.5" "ok" "mgt task search -i" "$seq"
-#
-#do_test "9.6" "ok" "mgt task search -f Assignee=Jean"
+do_test "9.4" "ok" "mgt task search"
+
+seq=$'s\nh\na\nh\nq'
+do_test "9.5" "ok" "mgt task search -i" "$seq"
+
+do_test "9.6" "ok" "mgt task search -f Assignee=Jean"
 
 do_test "9.7" "ok" "mgt project sync"
 
 do_test "9.8" "ok" "mgt project select test_proj1"
+
+do_test "9.8.1" "ok" "mgt project select test_proj2"
+
+do_test "9.8.2" "ok" "mgt project select test_proj1"
+
+seq=$'\030' #Send ^X to nano editor so it closes 
+do_test "7.0.1" "ok" "mgt task add -c todo -d description" "$seq"
 
 seq=$'\030'
 do_test "9.9" "ok" "mgt task add -c todo -d description" "$seq"
@@ -181,5 +188,5 @@ do_test "9.18" "nok" "mgt task depends -c todo -t 1 -o 6 --ndep \"2,3,4\""
 
 
 #### end of tests
-rm -rf /tmp/test.git /tmp/mgt-test
+#rm -rf /tmp/test.git /tmp/mgt-test
 #sed -i -e 's#MGT_PATH=/tmp/mgt-test.*#MGT_PATH=~/.mgt#' ~/.mgtconfig
