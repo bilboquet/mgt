@@ -79,14 +79,6 @@ usage_task_estimate() {
     echo "    -e,--estimation <value>  Task estimation"
 }
 
-usage_task_remaining() {
-    echo "usage: mgt task remaining <options>"
-    echo "  Options:"
-    echo "    -t,--task <task_id>      Task to estimate the remaining"
-    echo "    -c,--category <category> Category of the task"
-    echo "    -r,--remaining <value>   Task estimation of the remaining"
-}
-
 # Return 0 if $1 is a defined category
 # else print a message and return 1
 function exist_category () {
@@ -308,7 +300,6 @@ function mgt_task_add () {
     echo "Assignee: None" >> "$MGT_PROJECT_PATH/$category/$task_id"
     echo "Date: $(date '+%F %T')" >> "$MGT_PROJECT_PATH/$category/$task_id"
     echo "Estimation: None" >> "$MGT_PROJECT_PATH/$category/$task_id"
-    echo "Remaining: None" >> "$MGT_PROJECT_PATH/$category/$task_id"
     echo "Tags: $tags" >> "$MGT_PROJECT_PATH/$category/$task_id"
     echo "Depends: None" >> "$MGT_PROJECT_PATH/$category/$task_id"
     echo "Description: $description" >> "$MGT_PROJECT_PATH/$category/$task_id"
@@ -644,53 +635,6 @@ function mgt_task_estimate () {
     exit $?
 }
 
-function mgt_task_remaining () {
-    argv=$(getopt -o c:t:r: -l category:,task:,remaining: -- "$@")
-    eval set -- "$argv"
-    while [ true ]; do
-        ### TODO: Validate arguments
-        case "$1" in
-            -c|--category)
-                if exist_category "$2"; then
-                    category="$2"
-                else
-                    exit 1
-                fi
-                ;;
-            -t|--task)
-                if exist_task "$2"; then
-                    task_id="$2"
-                else
-                    echo "mgt: task: '$2' not found"
-                    exit 1
-                fi
-                ;;
-            -r|--remaining)
-                remaining="$2"
-                break
-                ;;
-            --)
-                shift
-                break
-                ;;
-            *)
-                usage_task_remaining
-                break
-                ;;
-        esac
-        shift 2
-    done
-
-    if ! exist_task_in_cat $task_id $category ; then
-        exit 1
-    fi
-
-    sed -i "s/Remaining:\(.*\)/Remaining: $remaining/" $MGT_PROJECT_PATH/$category/$task_id
-    $GIT add "$MGT_PROJECT_PATH/$category/$task_id"
-    $GIT commit -s -m "$(cat $MGT_CONF_PATH/project): remaining: Remaining for $category/$task_id is $remaining"
-    exit $?
-}
-
 function mgt_task_history () {
     set -x
     argv=$(getopt -o c:t: -l category:,task: -- "$@")
@@ -782,10 +726,6 @@ case $1 in
     estimate)
         shift
         mgt_task_estimate "$@"
-        ;;
-    remaining)
-        shift
-        mgt_task_remaining "$@"
         ;;
     history)
         shift

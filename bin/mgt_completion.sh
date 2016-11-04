@@ -31,7 +31,7 @@ _mgt_project () {
 }
 
 _mgt_task_seach_filter () {
-    local opts="Task-Id= Author= Assignee= Date= Estimation= Remaining= Tags= Depends= Description="
+    local opts="Task-Id= Author= Assignee= Date= Estimation= Tags= Depends= Description="
     local cur=${COMP_WORDS[COMP_CWORD]}
     COMPREPLY=( $( compgen -W "${opts}" -- ${cur} ) )
     return 0
