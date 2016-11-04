@@ -19,6 +19,7 @@ usage_task () {
     echo "       mgt task assign -c <category> --task <task_id> -u <username <user@server>>"
     echo "       mgt task rm --task <task_id>"
     echo "       mgt task history -c <category> --task <task_id>"
+    echo "       mgt task view -c <category> --task <task_id>"
     echo "       mgt task --help"
 }
 
@@ -151,6 +152,11 @@ function mgt_task_view () {
         shift 2
     done
 
+    if [ -z "$category" ]; then
+        echo "Missing category."
+        usage_task
+        exit 1
+    fi
     if ! exist_task_in_cat $task_id $category ; then
         exit 1
     fi
@@ -718,6 +724,14 @@ function mgt_task_history () {
         esac
         shift 2
     done
+    if [ -z "$category" ]; then
+        echo "Missing category."
+        usage_task
+        exit 1
+    fi
+    if ! exist_task_in_cat $task_id $category ; then
+        exit 1
+    fi
     $GIT log "$MGT_PROJECT_PATH/$category/$task_id"
     exit $?
 }
