@@ -92,8 +92,43 @@ _mgt_category () {
     COMPREPLY=( $( compgen -W "$categories" -- ${cur} ) )
     return 0
 }
+function _mgt_task_estimate () {
+    local cur prev opts
+    cur=${COMP_WORDS[COMP_CWORD]}
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    opts="-c --category -t --task -e --estimation"
 
-_mgt_task_depends () {
+    # filter used options
+    if [[ "$COMP_LINE" == *" --category "* ||  "$COMP_LINE" == *" -c "* ]]; then
+        opts="${opts/--category}"
+        opts="${opts/-c}"
+    fi
+    if [[ "$COMP_LINE" == *" --task "* ||  "$COMP_LINE" == *" -t "* ]]; then
+        opts="${opts/--task}"
+        opts="${opts/-t}"
+    fi
+    if [[ "$COMP_LINE" == *" --estimation "* ||  "$COMP_LINE" == *" -e "* ]]; then
+        opts="${opts/--estimation}"
+        opts="${opts/-e}"
+    fi
+
+    case "$prev" in
+        -t|--task)
+            _mgt_taskid
+            return 0
+            ;;
+        -c|--category)
+            _mgt_category
+            return 0
+            ;;
+    esac
+
+    COMPREPLY=( $( compgen -W "${opts}" -- ${cur} ) )
+    return 0
+
+}
+
+function _mgt_task_depends () {
     local cur prev opts
     cur=${COMP_WORDS[COMP_CWORD]}
     prev="${COMP_WORDS[COMP_CWORD-1]}"
@@ -163,7 +198,7 @@ function _mgt_task_basic () {
 _mgt_task () {
     local opts cur
     cur=${COMP_WORDS[COMP_CWORD]}
-    opts="-h --help search add mv edit assign rm depends view history"
+    opts="-h --help search add mv edit assign estimate rm depends view history"
     case "${COMP_WORDS[2]}" in
         -h|--help)
             ;;
@@ -177,6 +212,9 @@ _mgt_task () {
         edit)
             ;;
         assign)
+            ;;
+        estimate)
+            _mgt_task_estimate
             ;;
         rm)
             ;;
