@@ -94,7 +94,7 @@ function exist_category () {
 # else print a message and return 1
 function exist_task_in_cat () {
     if exist_category "$2" ; then
-         if [ -f "$MGT_PROJECT_PATH/$category/$1" ]; then
+         if [ -f "$MGT_PROJECT_PATH/$2/$1" ]; then
             return 0
         else
             echo "mgt: task: '$1' not found"
@@ -113,6 +113,43 @@ function exist_task () {
     return 1
 }
 
+function category_work_load () {
+    # get Estimated workload for each task in the category
+    work=( $(grep -s -h -e 'Estimation:' "$MGT_PROJECT_PATH/$1/"* | grep -v -e 'None' | sed -r 's|Estimation: (.*)|\1|') )
+    
+    # sum the workload
+    tot_hours=0
+    tot_days=0
+    tot_weeks=0
+    for load in "${work[@]}"; do
+        weeks=$(echo "$load" | sed -r "s|^(([[:digit:]]+)W)?([[:digit:]]+D)?([[:digit:]]+H)?$|\2|")
+        days=$(echo "$load" | sed -r "s|^([[:digit:]]+W)?(([[:digit:]]+)D)?([[:digit:]]+H)?$|\3|")
+        hours=$(echo "$load" | sed -r "s|^([[:digit:]]+W)?([[:digit:]]+D)?(([[:digit:]]+)H)?$|\4|")
+        
+        # replace empty by 0
+        [[ -z "$hours" ]] && hours=0
+        [[ -z "$days" ]] && days=0
+        [[ -z "$weeks" ]] && weeks=0
+        #sum
+        tot_hours=$(( $tot_hours+$hours ))
+        #manage carry over
+        carry=0
+        while [[ $tot_hours -ge 8 ]]; do
+            carry=$(( $carry+1 ))
+            tot_hours=$(( $tot_hours-8 ))
+        done
+        
+        tot_days=$(( $tot_days+$days+$carry ))
+        carry=0
+        while [[ $tot_days -ge 5 ]]; do
+            carry=$(( $carry+1 ))
+            tot_days=$(( $tot_days-5 ))
+        done
+
+        tot_weeks=$(( $tot_weeks+$weeks+$carry ))
+    done
+    echo "Estimated workload for $1: $tot_weeks week(s) $tot_days day(s) $tot_hours hour(s)" 
+}
 function mgt_task_view () {
     argv=$(getopt -o c:t: -l category:,task: -- "$@")
     eval set -- "$argv"
@@ -358,16 +395,18 @@ function mgt_task_mv () {
         shift 2
     done
     
-    if ! exist_task_in_cat $task_id $from ; then
-        exit 1
-    fi
-    if [ ! -d "$MGT_PROJECT_PATH/$to" ]; then
-        echo "mgt: category: '$to' does not exists."
-        exit 1
-    fi
+    # check args
+    [[ ! -z "$from" ]] || { echo "missing --from" ; exit 1 ;}
+    [[ ! -z "$to" ]] || { echo "missing --to" ; exit 1 ;}
     
+    exist_task_in_cat $task_id $from || exit 1
+    [[ -d "$MGT_PROJECT_PATH/$to" ]] ||
+        { echo "mgt: category: '$to' does not exists."; exit 1 ;}
+
     $GIT mv "$MGT_PROJECT_PATH/$from/$task_id" "$MGT_PROJECT_PATH/$to"
     $GIT commit -s -m "$(cat $MGT_CONF_PATH/project): move: '$from/$task_id' => '$to/$task_id'"
+    category_work_load "$from"
+    category_work_load "$to"
     exit $?
 }
 
@@ -638,24 +677,25 @@ function mgt_task_estimate () {
         echo "Missing estimation"
         exit 1
     fi
-    set -x
+
     # Validate estimation format aWbDcH
     # where a,b,c are int and W,D,H respectively means Weeks, Days, Hours
     [[ "$estimation" =~ ^([[:digit:]]+W)?([[:digit:]]+D)?([[:digit:]]+H)?$ ]] ||
           {
-          echo "Wrong fortmat for estimation." &&
-          echo "Estimation format: aWbDcH" &&
-          echo "where a,b,c are int and W,D,H respectively means Weeks, Days, Hours" &&
+          echo "Wrong format for estimation."
+          echo "Estimation format: aWbDcH"
+          echo "where a,b,c are integer and W,D,H respectively means Weeks, Days, Hours"
           exit 1 
           }
     sed -i "s/Estimation:\(.*\)/Estimation: $estimation/" $MGT_PROJECT_PATH/$category/$task_id || exit 1
+    
     $GIT add "$MGT_PROJECT_PATH/$category/$task_id"
     $GIT commit -s -m "$(cat $MGT_CONF_PATH/project): estimation: Estimate for $category/$task_id is $estimation"
+    category_work_load "$category"
     exit $?
 }
 
 function mgt_task_history () {
-    set -x
     argv=$(getopt -o c:t: -l category:,task: -- "$@")
     eval set -- "$argv"
     while [ true ]; do
