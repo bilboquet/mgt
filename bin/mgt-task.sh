@@ -17,6 +17,7 @@ usage_task () {
     echo "       mgt task mv --from <category> --to <category> --task <task_id>"
     echo "       mgt task edit -c <category> --task <task_id>"
     echo "       mgt task assign -c <category> --task <task_id> -u <username <user@server>>"
+    echo "       mgt task estimate --task <task_id> --category <category> --estimation <xWyDzH>"
     echo "       mgt task rm --task <task_id>"
     echo "       mgt task history -c <category> --task <task_id>"
     echo "       mgt task view -c <category> --task <task_id>"
@@ -625,11 +626,29 @@ function mgt_task_estimate () {
         shift 2
     done
 
+    if [ -z "$category" ]; then
+        echo "Missing category."
+        usage_task
+        exit 1
+    fi
     if ! exist_task_in_cat $task_id $category ; then
         exit 1
     fi
-
-    sed -i "s/Estimation:\(.*\)/Estimation: $estimation/" $MGT_PROJECT_PATH/$category/$task_id
+    if [ -z "$estimation" ]; then
+        echo "Missing estimation"
+        exit 1
+    fi
+    set -x
+    # Validate estimation format aWbDcH
+    # where a,b,c are int and W,D,H respectively means Weeks, Days, Hours
+    [[ "$estimation" =~ ^([[:digit:]]+W)?([[:digit:]]+D)?([[:digit:]]+H)?$ ]] ||
+          {
+          echo "Wrong fortmat for estimation." &&
+          echo "Estimation format: aWbDcH" &&
+          echo "where a,b,c are int and W,D,H respectively means Weeks, Days, Hours" &&
+          exit 1 
+          }
+    sed -i "s/Estimation:\(.*\)/Estimation: $estimation/" $MGT_PROJECT_PATH/$category/$task_id || exit 1
     $GIT add "$MGT_PROJECT_PATH/$category/$task_id"
     $GIT commit -s -m "$(cat $MGT_CONF_PATH/project): estimation: Estimate for $category/$task_id is $estimation"
     exit $?
