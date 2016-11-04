@@ -300,7 +300,7 @@ function mgt_task_add () {
     echo "Task-Id: $task_id" > "$MGT_PROJECT_PATH/$category/$task_id"
     echo "Author: $(git config user.name) <$(git config user.email)>" >> "$MGT_PROJECT_PATH/$category/$task_id"
     echo "Assignee: None" >> "$MGT_PROJECT_PATH/$category/$task_id"
-    echo "Date: $(date)" >> "$MGT_PROJECT_PATH/$category/$task_id"
+    echo "Date: $(date '+%F %T')" >> "$MGT_PROJECT_PATH/$category/$task_id"
     echo "Estimation: None" >> "$MGT_PROJECT_PATH/$category/$task_id"
     echo "Remaining: None" >> "$MGT_PROJECT_PATH/$category/$task_id"
     echo "Tags: $tags" >> "$MGT_PROJECT_PATH/$category/$task_id"
