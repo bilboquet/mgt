@@ -327,97 +327,97 @@ function mgt_task_add () {
 }
 
 function mgt_task_mv () {
-argv=$(getopt -o t: -l task:,to:,from: -- "$@")
-eval set -- "$argv"
-while [ true ]; do
-    ### TODO: Validate arguments
-    case "$1" in
-        --from)
-            if exist_category "$2"; then
-                from="$2"
-            else
+    argv=$(getopt -o t: -l task:,to:,from: -- "$@")
+    eval set -- "$argv"
+    while [ true ]; do
+        ### TODO: Validate arguments
+        case "$1" in
+            --from)
+                if exist_category "$2"; then
+                    from="$2"
+                else
+                    exit 1
+                fi
+                ;;
+            --to)
+                if exist_category "$2"; then
+                    to="$2"
+                else
+                    exit 1
+                fi
+                ;;
+            -t|--task)
+                if exist_task "$2"; then
+                    task_id="$2"
+                else
+                    echo "mgt: task: '$2' not found"
+                    exit 1
+                fi
+                ;;
+            --)
+                shift
+                break
+                ;;
+            *)
+                usage_task_mv
                 exit 1
-            fi
-            ;;
-        --to)
-            if exist_category "$2"; then
-                to="$2"
-            else
-                exit 1
-            fi
-            ;;
-        -t|--task)
-            if exist_task "$2"; then
-                task_id="$2"
-            else
-                echo "mgt: task: '$2' not found"
-                exit 1
-            fi
-            ;;
-        --)
-            shift
-            break
-            ;;
-        *)
-            usage_task_mv
-            exit 1
-            ;;
-    esac
-    shift 2
-done
-
-if ! exist_task_in_cat $task_id $from ; then
-    exit 1
-fi
-if [ ! -d "$MGT_PROJECT_PATH/$to" ]; then
-    echo "mgt: category: '$to' does not exists."
-    exit 1
-fi
-
-$GIT mv "$MGT_PROJECT_PATH/$from/$task_id" "$MGT_PROJECT_PATH/$to"
-$GIT commit -s -m "$(cat $MGT_CONF_PATH/project): move: '$from/$task_id' => '$to/$task_id'"
-exit $?
+                ;;
+        esac
+        shift 2
+    done
+    
+    if ! exist_task_in_cat $task_id $from ; then
+        exit 1
+    fi
+    if [ ! -d "$MGT_PROJECT_PATH/$to" ]; then
+        echo "mgt: category: '$to' does not exists."
+        exit 1
+    fi
+    
+    $GIT mv "$MGT_PROJECT_PATH/$from/$task_id" "$MGT_PROJECT_PATH/$to"
+    $GIT commit -s -m "$(cat $MGT_CONF_PATH/project): move: '$from/$task_id' => '$to/$task_id'"
+    exit $?
 }
 
 function mgt_task_edit () {
-argv=$(getopt -o c:t: -l category:,task: -- "$@")
-eval set -- "$argv"
-while [ true ]; do
-
-    ### TODO: Validate arguments
-    case "$1" in
-        -c|--category)
-            if exist_category "$2"; then
-                category="$2"
-            else
+    argv=$(getopt -o c:t: -l category:,task: -- "$@")
+    eval set -- "$argv"
+    while [ true ]; do
+    
+        ### TODO: Validate arguments
+        case "$1" in
+            -c|--category)
+                if exist_category "$2"; then
+                    category="$2"
+                else
+                    exit 1
+                fi
+                ;;
+            -t|--task)
+                if exist_task "$2"; then
+                    task_id="$2"
+                else
+                    echo "mgt: task: '$2' not found"
+                    exit 1
+                fi
+                break
+                ;;
+            *)
+                usage_task_edit
                 exit 1
-            fi
-            ;;
-        -t|--task)
-            if exist_task "$2"; then
-                task_id="$2"
-            else
-                echo "mgt: task: '$2' not found"
-                exit 1
-            fi
-            break
-            ;;
-        *)
-            usage_task_edit
-            exit 1
-            ;;
-    esac
-    shift 2
-done
-
-if ! exist_task_in_cat $task_id $category ; then
-    exit 1
-fi
-
-$EDITOR "$MGT_PROJECT_PATH/$category/$task_id"
-$GIT add "$MGT_PROJECT_PATH/$category/$task_id"
-$GIT commit -s -m "$(cat $MGT_CONF_PATH/project): edit: $category/$task_id"
-exit $?
+                ;;
+        esac
+        shift 2
+    done
+    
+    if ! exist_task_in_cat $task_id $category ; then
+        exit 1
+    fi
+    
+    $EDITOR "$MGT_PROJECT_PATH/$category/$task_id"
+    $GIT add "$MGT_PROJECT_PATH/$category/$task_id"
+    $GIT commit -s -m "$(cat $MGT_CONF_PATH/project): edit: $category/$task_id"
+    exit $?
 }
 
 function mgt_task_rm () {
