@@ -129,7 +129,8 @@ _mgt_task_depends () {
     COMPREPLY=( $( compgen -W "${opts}" -- ${cur} ) )
     return 0
 }
-_mgt_task_history () {
+
+function _mgt_task_basic () {
     local cur prev opts
     cur=${COMP_WORDS[COMP_CWORD]}
     prev="${COMP_WORDS[COMP_CWORD-1]}"
@@ -146,7 +147,7 @@ _mgt_task_history () {
     fi
 
     case "$prev" in
-        -o|--on|-t|--task|--ndep)
+        -t|--task)
             _mgt_taskid
             return 0
             ;;
@@ -162,7 +163,7 @@ _mgt_task_history () {
 _mgt_task () {
     local opts cur
     cur=${COMP_WORDS[COMP_CWORD]}
-    opts="-h --help search add mv edit assign rm depends history"
+    opts="-h --help search add mv edit assign rm depends view history"
     case "${COMP_WORDS[2]}" in
         -h|--help)
             ;;
@@ -182,8 +183,11 @@ _mgt_task () {
         depends)
             _mgt_task_depends
             ;;
+        view)
+            _mgt_task_basic
+            ;;
         history)
-            _mgt_task_history
+            _mgt_task_basic
             ;;
         *)
             COMPREPLY=( $( compgen -W "${opts}" -- ${cur} ) )
