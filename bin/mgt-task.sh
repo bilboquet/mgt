@@ -134,14 +134,13 @@ function category_work_load () {
         tot_hours=$(( $tot_hours+$hours ))
         #manage carry over
         carry=0
-        while [[ $tot_hours -ge 8 ]]; do
+        while (( $tot_hours >= 8 )); do
             carry=$(( $carry+1 ))
             tot_hours=$(( $tot_hours-8 ))
         done
-        
         tot_days=$(( $tot_days+$days+$carry ))
         carry=0
-        while [[ $tot_days -ge 5 ]]; do
+        while (( $tot_days >= 5 )); do
             carry=$(( $carry+1 ))
             tot_days=$(( $tot_days-5 ))
         done
@@ -235,20 +234,26 @@ function mgt_task_search () {
 
     if [ -z "$grep_filter" ]; then
         # in case of empty filter, add a "match all" filter
-        grep_filter="-e \"Description: \""
+        grep_filter="Description: "
     fi 
     if [ -z "$sort_criteria" ]; then
     ### TODO : finish sort implementation
-        sort_criteria="Date"
+        sort_criteria="Date: "
     fi
-    cmd="grep -iHr $grep_filter $MGT_PROJECT_PATH/$category | sed 's!$MGT_PROJECT_PATH/\([^: ]*\):.*!\1!g' | sort -u"
-    eval task_list=\$\($cmd\)
-    
+
+    # get matching tasks, sort by sort_criteria, get file path
+    task_list=$(grep -e $sort_criteria $(grep -lr -e $grep_filter "$MGT_PROJECT_PATH/$category") | sort -k2 | sed -r "s|^(.*):$sort_criteria.*$|\1|")
+    echo "----------------------------------------------------------"
+    echo "Task(s) matching: \"$grep_filter\""
+    echo "category/shorten task_id: task description : sort criteria($sort_criteria)"
+    echo "----------------------------------------------------------"
     for task in $task_list; do
-        grep_filter="Description: "
-        cmd="grep -e $grep_filter $MGT_PROJECT_PATH/$task | sed 's!$grep_filter!!'"
-        eval task_details=\$\($cmd\)
-        echo "##" $task": "$task_details
+#        grep_filter="Description: "
+        task_description=$(grep -e $grep_filter $task | sed "s!$grep_filter!!")
+        task_sort=$(grep -e $sort_criteria $task | sed "s!$sort_criteria!!")
+        # shorten $task
+        task=$(echo $task | sed -r "s|^.*/(.*)/([[:alnum:]]+)-.*$|\1/\2|")
+        echo "  "$task": "$task_description": "$task_sort
         if [ ! -z $interactive ]; then
             while [ true ]; do
                 echo
