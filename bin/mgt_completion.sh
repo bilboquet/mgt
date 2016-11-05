@@ -1,4 +1,4 @@
-_mgt_project_select () {
+function _mgt_project_select () {
     local cur
     cur=${COMP_WORDS[COMP_CWORD]}
     prj_list=$(mgt project list | cut -b3-)
@@ -6,7 +6,7 @@ _mgt_project_select () {
     return 0
 }
 
-_mgt_project () {
+function _mgt_project () {
     local opts cur
     cur=${COMP_WORDS[COMP_CWORD]}
     opts="-h --help init list select sync history"
@@ -30,14 +30,14 @@ _mgt_project () {
     esac
 }
 
-_mgt_task_seach_filter () {
+function _mgt_task_seach_filter () {
     local opts="Task-Id= Author= Assignee= Date= Estimation= Tags= Depends= Description="
     local cur=${COMP_WORDS[COMP_CWORD]}
     COMPREPLY=( $( compgen -W "${opts}" -- ${cur} ) )
     return 0
 }
 
-_mgt_task_seach () {
+function _mgt_task_seach () {
     ###TODO: add --category
     local cur prev opts
     cur=${COMP_WORDS[COMP_CWORD]}
@@ -60,7 +60,7 @@ _mgt_task_seach () {
     return 0
 }
 
-_mgt_taskid () {
+function _mgt_taskid () {
     local cur=${COMP_WORDS[COMP_CWORD]}
     local category
     # Is a category defined
@@ -80,18 +80,52 @@ _mgt_taskid () {
     echo
     echo "Task id : description"
     mgt task search $category | grep -e "${category/-c /}/$grep_filter"
-    echo "Task id below for completion, you may need to hit <TAB> again."
-    local tasks=$(mgt task search $category | sed -e 's@.*/\([-0-9a-z]*\):.*$@\1@')
+    echo "Full task id below for completion, you may need to hit <TAB> again."
+    local tasks=$(find $MGT_PROJECT_PATH/${category/-c /} -type f -not -name '.*' -exec basename {} \;)
     COMPREPLY=( $( compgen -W "$tasks" -- ${cur} ) )
     return 0
 }
 
-_mgt_category () {
+function _mgt_category () {
     local cur=${COMP_WORDS[COMP_CWORD]}
     local categories=$(mgt category list | cut -d':' -f 1)
     COMPREPLY=( $( compgen -W "$categories" -- ${cur} ) )
     return 0
 }
+
+function _mgt_task_mv (){
+    local cur prev opts
+    cur=${COMP_WORDS[COMP_CWORD]}
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    opts="--to --from -t --task"
+
+    # filter used options
+    if [[ "$COMP_LINE" == *" --task "* ||  "$COMP_LINE" == *" -t "* ]]; then
+        opts="${opts/--task}"
+        opts="${opts/-t}"
+    fi
+    if [[ "$COMP_LINE" == *" --to "* ]]; then
+        opts="${opts/--to}"
+    fi
+    if [[ "$COMP_LINE" == *" --from "* ]]; then
+        opts="${opts/--from}"
+    fi
+
+    case "$prev" in
+        -t|--task)
+            _mgt_taskid
+            return 0
+            ;;
+        --from|--to)
+            _mgt_category
+            return 0
+            ;;
+    esac
+
+    COMPREPLY=( $( compgen -W "${opts}" -- ${cur} ) )
+    return 0
+}
+
 function _mgt_task_estimate () {
     local cur prev opts
     cur=${COMP_WORDS[COMP_CWORD]}
@@ -125,7 +159,6 @@ function _mgt_task_estimate () {
 
     COMPREPLY=( $( compgen -W "${opts}" -- ${cur} ) )
     return 0
-
 }
 
 function _mgt_task_depends () {
@@ -208,6 +241,7 @@ _mgt_task () {
         add)
             ;;
         mv)
+            _mgt_task_mv
             ;;
         edit)
             ;;
@@ -236,6 +270,7 @@ _mgt_task () {
 }
 
 _mgt () {
+    . ~/.mgtconfig
     local cur prev opts
 
     COMPREPLY=()   # Array variable storing the possible completions.
