@@ -88,9 +88,17 @@ function _mgt_taskid () {
 
 function _mgt_category () {
     local cur=${COMP_WORDS[COMP_CWORD]}
-    local categories=$(mgt category list | cut -d':' -f 1)
+    local categories=$(mgt category list | tail -n +3 | cut -d':' -f 1)
     COMPREPLY=( $( compgen -W "$categories" -- ${cur} ) )
     return 0
+}
+
+function _mgt_user () {
+    local cur=${COMP_WORDS[COMP_CWORD]}
+    local users=$(mgt user list | tail -n +3 | cut -d':' -f 1)
+    COMPREPLY=( $( compgen -W "$users" -- ${cur} ) )
+    return 0
+    
 }
 
 function _mgt_task_mv (){
@@ -124,6 +132,45 @@ function _mgt_task_mv (){
 
     COMPREPLY=( $( compgen -W "${opts}" -- ${cur} ) )
     return 0
+}
+
+function _mgt_task_assign () {
+    local cur prev opts
+    cur=${COMP_WORDS[COMP_CWORD]}
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    opts="-c -t --task -u"
+
+    # filter used options
+    case "$COMP_LINE" in
+        *" --task "*|*" -t "*)
+            opts="${opts/--task}"
+            opts="${opts/-t}"
+            ;;&
+        *" -c "*)
+            opts="${opts/-c}"
+            ;;&
+        *" -u "*)
+            opts="${opts/-u}"
+            ;;&
+    esac
+
+    case "$prev" in
+        -t|--task)
+            _mgt_taskid
+            return 0
+            ;;
+        -c)
+            _mgt_category
+            return 0
+            ;;
+        -u)
+            _mgt_user
+            return 0
+    esac
+
+    COMPREPLY=( $( compgen -W "${opts}" -- ${cur} ) )
+    return 0
+
 }
 
 function _mgt_task_estimate () {
@@ -239,18 +286,22 @@ _mgt_task () {
             _mgt_task_seach
             ;;
         add)
+            _mgt_task_basic
             ;;
         mv)
             _mgt_task_mv
             ;;
         edit)
+            _mgt_task_basic
             ;;
         assign)
+            _mgt_task_assign
             ;;
         estimate)
             _mgt_task_estimate
             ;;
         rm)
+            _mgt_task_basic
             ;;
         depends)
             _mgt_task_depends
