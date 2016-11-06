@@ -496,49 +496,51 @@ function mgt_task_rm () {
 }
 
 function mgt_task_assign () {
-argv=$(getopt -o c:t:u: -l category:,task:,username: -- "$@")
-eval set -- "$argv"
-while [ true ]; do
-    ### TODO: Validate arguments
-    case "$1" in
-        -c|--category)
-            if exist_category "$2"; then
-                category="$2"
-            else
-                exit 1
-            fi
-            ;;
-        -t|--task)
-            if exist_task "$2"; then
-                task_id="$2"
-            else
-                echo "mgt: task: '$2' not found"
-                exit 1
-            fi
-            ;;
-        -u|--username)
-            username="$2"
-            break
-            ;;
-        --)
-            shift
-            break
-            ;;
-        *)
-            usage_task_assign
-            break
-            ;;
-    esac
-    shift 2
-done
+    argv=$(getopt -o c:t:u: -l category:,task:,username: -- "$@")
+    eval set -- "$argv"
+    while [ true ]; do
+        ### TODO: Validate arguments
+        case "$1" in
+            -c|--category)
+                if exist_category "$2"; then
+                    category="$2"
+                else
+                    exit 1
+                fi
+                ;;
+            -t|--task)
+                if exist_task "$2"; then
+                    task_id="$2"
+                else
+                    echo "mgt: task: '$2' not found"
+                    exit 1
+                fi
+                ;;
+            -u|--username)
+                username="$2"
+                break
+                ;;
+            --)
+                shift
+                break
+                ;;
+            *)
+                usage_task_assign
+                break
+                ;;
+        esac
+        shift 2
+    done
+    
+    if ! exist_task_in_cat $task_id $category ; then
+        exit 1
+    fi
+    ### TODO check that username is a valid user
+    [[ ! -z "$username" ]] || { usage_task; echo "Username missing"; exit 1; }
 
-if ! exist_task_in_cat $task_id $category ; then
-    exit 1
-fi
-
-sed -i "s/Assignee:\(.*\)/Assignee: $username/" $MGT_PROJECT_PATH/$category/$task_id
-$GIT add "$MGT_PROJECT_PATH/$category/$task_id"
-$GIT commit -s -m "$(cat $MGT_CONF_PATH/project): assign: $category/$task_id to $username"
+    sed -i "s/Assignee:\(.*\)/Assignee: $username/" $MGT_PROJECT_PATH/$category/$task_id
+    $GIT add "$MGT_PROJECT_PATH/$category/$task_id"
+    $GIT commit -s -m "$(cat $MGT_CONF_PATH/project): assign: $category/$task_id to $username"
     exit $?
 }
 
