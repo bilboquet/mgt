@@ -240,9 +240,10 @@ function mgt_task_search () {
     ### TODO : finish sort implementation
         sort_criteria="Date: "
     fi
-
+    task_list=$(grep -lr -e $grep_filter "$MGT_PROJECT_PATH/$category")
+    [[ $task_list == "" ]] && { echo "No task found."; exit 0; }
     # get matching tasks, sort by sort_criteria, get file path
-    task_list=$(grep -e $sort_criteria $(grep -lr -e $grep_filter "$MGT_PROJECT_PATH/$category") | sort -k2 | sed -r "s|^(.*):$sort_criteria.*$|\1|")
+    task_list=$(grep -He $sort_criteria $task_list | sort -k2 | sed -r "s|^(.*):$sort_criteria.*$|\1|")
     echo "----------------------------------------------------------"
     echo "Task(s) matching: \"$grep_filter\""
     echo "category/shorten task_id: task description : sort criteria($sort_criteria)"
