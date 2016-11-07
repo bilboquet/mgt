@@ -6,53 +6,51 @@ if [ ! -e ~/.mgtconfig ]; then
     mgt init --new
 fi
 
+REMOTE=/tmp/test.git
+
 # test setup
-rm -rf /tmp/test.git && pushd . && mkdir -p /tmp/test.git && cd /tmp/test.git && git init --bare && popd
+rm -rf "$REMOTE" && pushd . && mkdir -p "$REMOTE" && cd "$REMOTE" && git init --bare && popd
 sed -i -e 's#MGT_PATH=~/.mgt.*#MGT_PATH=/tmp/mgt-test#' ~/.mgtconfig
 . ~/.mgtconfig
 
-REMOTE=/tmp/test.git
-
-
-# check_res "test_name" "expected result" "result" "command output"
+# check_res "test_name" "result"
 function check_res () {
-    mkdir -p "$1"
-    echo "$4" > "$1/out"
+    exp_res=$(cat exp_res 2>&1) || { echo "Error: can't find expected result for test $test_name" ; exit 1; }
     
 #    diff -q "$1".out "$1".out.ref
     check="0"
-    if [ -x "$1/check_test" ]; then
-        cmd="$1/check_test > /dev/null 2>&1 "
+    if [ -x "check_test" ]; then
+        cmd="./check_test > /dev/null 2>&1 "
         eval $cmd
         check=$?
     fi
     
     if { [ "$check" != "0" ]; } ||
-       { [ "$2" == "ok" ] && [ ! "$3" == "0" ]; } ||
-       { [ "$2" == "nok" ] && [ "$3" == "0" ]; } ; then
+       { [ "$exp_res" == "ok" ] && [ ! "$2" == "0" ]; } ||
+       { [ "$exp_res" == "nok" ] && [ "$2" == "0" ]; } ; then
         # ERROR
 
         while [ true ]; do
             echo ">> ERROR running test \"$1\""
-            echo "received $3, $2 was awaited"
+            echo "received $2, $exp_res was awaited"
             echo "check:$check"
             echo "show (o)utput, show (d)iff, (r)un check, (u)pdate ref, (n)ext, (q)uit"
             read input
             case $input in
                 o)
-                    cat "$1/out"
+                    cat out
                     ;;
                 d)
-                    diff "$1/out" "$1/out.ref"
+                    diff "out" "out.ref"
                     ;;
                 u)
-                    cp "$1/out" "$1/out.ref"
+                    cp "out" "out.ref"
                     ;;
                 ""|n|next)
                     break
                     ;;
                 r)
-                    "$1/check_test"
+                    "./check_test"
                     ;;
                 q)
                     exit 0
@@ -67,39 +65,25 @@ function check_res () {
     fi
 }
 
-#do_test [-i] "test_name" "expected result: ok|nok" "test command" ["command sequence"]
+# do_test "test_name"
 function do_test () {
-    interactive=''
-    if [ "$1" == "-i" ]; then
-        shift
-        interactive=true
-    fi
     test_name="$1"
-    shift
-    exp_res="$1"
-    shift
-            
-    echo -n "##### test $test_name : '$1'"
-    if [ $# -eq 1 ]; then
-        echo
-        if [ ! $interactive ]; then
-            cmd="$1 2>&1"
-            eval test_out=\$\($cmd\)
-            check_res "$test_name" "$exp_res" "$?" "$test_out"
-        else
-            eval "$1"
-        fi
-    else
-        echo $2
-        if [ ! $interactive ]; then
-            ### TODO: as above use eval to prevent param spliting
-            test_out=$($1 <<< "$2" 2>&1)
-            check_res "$test_name" "$exp_res" "$?" "$test_out"
-        else
-            eval $1 <<< "$2"
-        fi
-    fi
-#    echo
+    echo -n "# test $test_name"
+    cd "$test_name" || { echo "\nError: can't find test:$test_name" ; return 1; }
+
+    # call the setup fonction of the script
+    ./test_script.sh "setup" || { echo "Error no setup for test:$test_name" ; return 1; }
+    # if test defines a pretty name, print it, else newlane 
+    [[ -e pretty_name ]] && { echo -n ": "; cat pretty_name; } || echo
+
+    # run the test
+    unset input interactive
+    [[ -e input ]] && input=" < input"
+    [[ ! -e interactive ]] && interactive=" > out 2>&1"
+    eval ./test_script.sh $interactive $input
+    test_res="$?"
+    check_res "$test_name" "$test_res" 
+    return 0
 }
 
 
@@ -110,83 +94,26 @@ echo "##################################################"
 echo "Press enter to continue or C^c to quit"
 #if false; then # jump to #end jump
 #read
+echo
+echo
 
-rm -rf $MGT_PATH
-do_test "1" "ok" "mgt init -r $REMOTE"
+# check we are in tests dir
+tests_dir=$(pwd)
+[[ $tests_dir =~ .*/tests ]] || exit 1
 
-rm -rf $MGT_PATH
-do_test "2" "nok" "mgt init"
+# find tests
+# find dirs containing a test, print the dirname (i.e. the test name|number), remove leading './'
+# then sort => tests 
+tests=$(find . -name 'test_script.sh' -printf "%h\n" | sed -e 's|^./||' | sort | xargs)
+echo $tests
+for t in $tests; do
+    do_test "$t"
+    cd "$tests_dir"
+done
 
-do_test "3" "ok" "mgt init --new"
+exit 0
 
-rm -rf $MGT_PATH
-do_test "4" "ok" "mgt init --new -r $REMOTE"
-
-rm -rf $MGT_PATH
-do_test "5" "ok" "mgt init -n -r $REMOTE --force"
-
-do_test "6" "nok" "mgt project init"
-
-do_test "7" "ok" "mgt project init test_proj1"
-
-do_test "7.1" "nok" "mgt project init test_proj1"
-
-do_test "7.2" "ok" "mgt project init test_proj2"
-
-do_test "8" "ok" "mgt project list"
-
-do_test "9" "ok" "mgt task search"
-
-do_test "9.1" "nok" "mgt task add"
-
-do_test "9.2" "nok" "mgt task add -c todo"
-
-seq=$'\030' #Send ^X to nano editor so it closes 
-do_test "9.3" "ok" "mgt task add -c todo -d description" "$seq"
-
-do_test "9.4" "ok" "mgt task search"
-
-seq=$'s\nh\na\nh\nq'
-do_test "9.5" "ok" "mgt task search -i" "$seq"
-
-do_test "9.6" "ok" "mgt task search -f Assignee=Jean"
-
-do_test "9.7" "ok" "mgt project sync"
-
-do_test "9.8" "ok" "mgt project select test_proj1"
-
-do_test "9.8.1" "ok" "mgt project select test_proj2"
-
-do_test "9.8.2" "ok" "mgt project select test_proj1"
-
-seq=$'\030' #Send ^X to nano editor so it closes 
-do_test "7.0.1" "ok" "mgt task add -c todo -d description" "$seq"
-
-seq=$'\030'
-do_test "9.9" "ok" "mgt task add -c todo -d description" "$seq"
-
-do_test "9.10" "ok" "mgt project sync"
-
-seq=$'\030'
-do_test "9.11" "ok" "mgt task add -c todo -d description" "$seq"
-
-do_test "9.12" "ok" "mgt task depends -c todo -t 1 -o 2"
-
-seq=$'\030'
-do_test "9.13" "ok" "mgt task add -c todo -d description"  "$seq"
-#fi #end jump
-do_test "9.14" "ok" "mgt task depends -c todo -t 1 -o 2,3"
-
-seq=$'\030'
-do_test "9.15" "ok" "mgt task add -c todo -d description" "$seq"
-
-do_test "9.16" "ok" "mgt task depends -c todo -t 1 -o 4 -o 2,3"
-
-do_test "9.17" "ok" "mgt task depends -c todo -t 1 -o 3 --ndep \"2,4\""
-
-do_test "9.18" "nok" "mgt task depends -c todo -t 1 -o 6 --ndep \"2,3,4\""
-
-
+echo
 #### end of tests
 #rm -rf /tmp/test.git /tmp/mgt-test
 #sed -i -e 's#MGT_PATH=/tmp/mgt-test.*#MGT_PATH=~/.mgt#' ~/.mgtconfig

@@ -1,6 +1,7 @@
 #!/bin/bash
 
 . ../config_test
+function setup () {
 
 # expected result of the test
 echo "ok" > exp_res
@@ -10,4 +11,11 @@ echo "ok" > exp_res
 
 # put input of the test, if any, into input: echo "values" > input
 
-mgt task depends -c todo -t 1 -o 3 --ndep "2,4"
+    exit 0
+}
+[[ "$1" == "setup" ]] && setup
+
+tasks=( $(ls -tr "$MGT_PROJECT_PATH/todo/") )
+
+mgt task depends -c todo -t ${tasks[0]} -o ${tasks[2]} --ndep ${tasks[1]},${tasks[3]}
+

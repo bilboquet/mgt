@@ -1,6 +1,7 @@
 #!/bin/bash
 
 . ../config_test
+function setup () {
 
 # expected result of the test
 echo "ok" > exp_res
@@ -15,5 +16,9 @@ h
 a
 h
 q" > input
+
+    exit 0
+}
+[[ "$1" == "setup" ]] && setup
 
 mgt task search -i
