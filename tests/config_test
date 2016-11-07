@@ -1,0 +1,3 @@
+REMOTE=/tmp/test.git
+
+. ~/.mgtconfig

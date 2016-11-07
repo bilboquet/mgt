@@ -3,7 +3,7 @@ PREFIX ?= /usr
 clean:
 	-rm -f *~
 	-rm -f bin/*~
-	-find . -name 'out' | xargs rm
+	-find . -name 'out' -o -name 'input' -o -name 'interactive' -o -name 'exp_res'| xargs rm
 
 install:
 	cp bin/mgt bin/mgt-*.sh $PREFIX/bin
