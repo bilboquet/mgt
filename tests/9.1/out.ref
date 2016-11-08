@@ -1,0 +1,13 @@
+using defaul category: todo
+todo
+usage: mgt task search [--category <category>] [--filter <criteria>] [--sort <criteria>] [-i --interactive]
+       mgt task add [-c <category=todo>] [-T <tag_comma_separated_list>] -d <description>
+       mgt task mv --from <category> --to <category> --task <task_id>
+       mgt task edit -c <category> --task <task_id>
+       mgt task assign -c <category> --task <task_id> -u <username <user@server>>
+       mgt task estimate --task <task_id> --category <category> --estimation <xWyDzH>
+       mgt task rm --task <task_id>
+       mgt task history -c <category> --task <task_id>
+       mgt task view -c <category> --task <task_id>
+       mgt task --help
+Missing description

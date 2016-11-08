@@ -1,0 +1,6 @@
+Project <name> cannot be empty
+usage: mgt project init <name>
+       mgt project list
+       mgt project select <name>
+       mgt project sync
+       mgt project history
