@@ -15,7 +15,7 @@ echo "ok" > exp_res
 }
 [[ "$1" == "setup" ]] && setup
 
-tasks=( $(ls -tr "$MGT_PROJECT_PATH/todo/") )
+tasks=( $(ls "$MGT_PROJECT_PATH/todo/" | sort) )
 
 mgt task depends -c todo -t ${tasks[0]} -o ${tasks[2]} --ndep ${tasks[1]},${tasks[3]}
 
