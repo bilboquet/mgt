@@ -3,7 +3,7 @@ PREFIX ?= /usr
 clean:
 	-rm -f *~
 	-rm -f bin/*~
-	-find . -name 'out' -o -name 'input' -o -name 'interactive' -o -name 'exp_res'| xargs rm
+	-find . -name 'out' -o -name 'input' -o -name 'interactive' -o -name 'exp_res' -o -name 'pretty_name'| xargs rm
 
 install:
 	cp bin/mgt bin/mgt-*.sh $(PREFIX)/bin
@@ -16,4 +16,4 @@ uninstall:
 
 .PHONY: tests
 tests:
-	cd tests && ./test_mgt.sh
+	cd tests && ./test_mgt.sh $(LIST)

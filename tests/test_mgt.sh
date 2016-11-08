@@ -89,23 +89,25 @@ function do_test () {
 
 
 echo "##################################################"
-echo "#### Warning, this test will remove $MGT_PATH ####"
+echo "#### Warning, this test will modify $MGT_PATH ####"
 echo "##################################################"
 echo "Press enter to continue or C^c to quit"
 #if false; then # jump to #end jump
-#read
+read
 echo
 echo
+
+# find tests
+# find dirs containing a test, print the dirname (i.e. the test name|number), remove leading './'
+# then sort => tests 
+[[ "$1" == "all" || $# -eq 0 ]] && tests=$(find . -name 'test_script.sh' -printf "%h\n" | sed -e 's|^./||' | sort | xargs)
+[[ $# -ge 1 ]] && tests=$@
 
 # check we are in tests dir
 tests_dir=$(pwd)
 [[ $tests_dir =~ .*/tests ]] || exit 1
 
-# find tests
-# find dirs containing a test, print the dirname (i.e. the test name|number), remove leading './'
-# then sort => tests 
-tests=$(find . -name 'test_script.sh' -printf "%h\n" | sed -e 's|^./||' | sort | xargs)
-echo $tests
+echo "Will run test(s): $tests"
 for t in $tests; do
     do_test "$t"
     cd "$tests_dir"
