@@ -1,3 +1,51 @@
 REMOTE=/tmp/test.git
 
 . ~/.mgtconfig
+
+function setup () {
+    # expected result of the test
+    [[ -z $EXP_RES ]] && { echo 'Error: $EXP_RES is not defined'; exit 1; }
+    echo "$EXP_RES" > exp_res
+
+        # Test name that will be displayed before running
+    [[ ! -z $PRETTY_NAME ]] && echo "$PRETTY_NAME" > pretty_name
+
+    # Interactive test
+    [[ ! -z $INTERACTIVE ]] && touch interactive
+
+    # put input of the test, if any, into input: echo "values" > input
+    [[ ! -z $INPUTS ]] && echo $INPUTS > input
+
+    exit 0
+}
+
+function new_test () {
+    [[ $# -ne 1 ]] && { echo "Error: only one argument is need: test_name"; exit 1; }
+    mkdir -p "$1"
+    cat > "$1/test_script.sh" << EOL
+#!/bin/bash
+
+. ../config_test
+
+# Expected result of the test
+#EXP_RES="ok|nok"
+
+# Test name that will be displayed before running
+#PRETTY_NAME=""
+
+# Interactive test
+#INTERACTIVE=true
+
+# Inputs of the test
+#INPUTS="a b c"
+
+
+[[ "\$1" == "setup" ]] && setup
+
+# Test body goes here
+EOL
+
+    echo "Test skel generated: $1/test_script.sh"
+}
+
+[[ "$1" == "newtest" ]] && new_test $2
