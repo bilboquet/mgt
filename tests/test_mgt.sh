@@ -13,10 +13,12 @@ rm -rf "$REMOTE" && pushd . && mkdir -p "$REMOTE" && cd "$REMOTE" && git init --
 sed -i -e 's#MGT_PATH=~/.mgt.*#MGT_PATH=/tmp/mgt-test#' ~/.mgtconfig
 . ~/.mgtconfig
 
+
 # check_res "test_name" "result"
 function check_res () {
-    exp_res=$(cat exp_res 2>&1) || { echo "Error: can't find expected result for test $test_name" ; exit 1; }
-    
+    exp_res=$(cat exp_res 2>&1) || { echo "Error: can't find expected result for test $test_name" ; return 1; }
+    [[ $exp_res == "ok" || $exp_res == "ok" ]] || { echo "Error: invalid expected result $exp_res for test:$test_name" ; return 1; }
+     
 #    diff -q "$1".out "$1".out.ref
     check="0"
     if [ -x "check_test" ]; then
@@ -83,7 +85,7 @@ function do_test () {
     eval ./test_script.sh $interactive $input
     test_res="$?"
     check_res "$test_name" "$test_res" 
-    return 0
+    return $?
 }
 
 
@@ -115,7 +117,6 @@ done
 
 exit 0
 
-echo
 #### end of tests
-#rm -rf /tmp/test.git /tmp/mgt-test
-#sed -i -e 's#MGT_PATH=/tmp/mgt-test.*#MGT_PATH=~/.mgt#' ~/.mgtconfig
+rm -rf /tmp/test.git /tmp/mgt-test
+sed -i -e 's#MGT_PATH=/tmp/mgt-test.*#MGT_PATH=~/.mgt#' ~/.mgtconfig
