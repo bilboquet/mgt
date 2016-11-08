@@ -17,9 +17,12 @@ sed -i -e 's#MGT_PATH=~/.mgt.*#MGT_PATH=/tmp/mgt-test#' ~/.mgtconfig
 # check_res "test_name" "result"
 function check_res () {
     exp_res=$(cat exp_res 2>&1) || { echo "Error: can't find expected result for test $test_name" ; return 1; }
-    [[ $exp_res == "ok" || $exp_res == "ok" ]] || { echo "Error: invalid expected result $exp_res for test:$test_name" ; return 1; }
+    [[ $exp_res == "ok" || $exp_res == "nok" ]] || { echo "Error: invalid expected result $exp_res for test:$test_name" ; return 1; }
      
-#    diff -q "$1".out "$1".out.ref
+
+    diff_res="0"
+    [[ -e out.ref ]] && { diff -q out out.ref; diff_res=$?; }
+    
     check="0"
     if [ -x "check_test" ]; then
         cmd="./check_test > /dev/null 2>&1 "
@@ -27,7 +30,8 @@ function check_res () {
         check=$?
     fi
     
-    if { [ "$check" != "0" ]; } ||
+    if { [ "$diff_res" != "0" ]; } ||
+       { [ "$check" != "0" ]; } ||
        { [ "$exp_res" == "ok" ] && [ ! "$2" == "0" ]; } ||
        { [ "$exp_res" == "nok" ] && [ "$2" == "0" ]; } ; then
         # ERROR
@@ -35,7 +39,7 @@ function check_res () {
         while [ true ]; do
             echo ">> ERROR running test \"$1\""
             echo "received $2, $exp_res was awaited"
-            echo "check:$check"
+            echo "check:$check diff:$diff_res"
             echo "show (o)utput, show (d)iff, (r)un check, (u)pdate ref, (n)ext, (q)uit"
             read input
             case $input in
@@ -81,8 +85,11 @@ function do_test () {
     # run the test
     unset input interactive
     [[ -e input ]] && input=" < input"
+    interactive=" 2>&1 | tee out"
     [[ ! -e interactive ]] && interactive=" > out 2>&1"
-    eval ./test_script.sh $interactive $input
+    # Because tee will always return 0, we use pipefail to get the test status
+    set -o pipefail
+    eval ./test_script.sh $input $interactive
     test_res="$?"
     check_res "$test_name" "$test_res" 
     return $?
@@ -111,6 +118,7 @@ tests_dir=$(pwd)
 
 echo "Will run test(s): $tests"
 for t in $tests; do
+    [[ ! -z $FORCE_INTERACTIVE ]] && { read; clear; touch "$t/interactive"; }
     do_test "$t"
     cd "$tests_dir"
 done
