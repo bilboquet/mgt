@@ -6,10 +6,13 @@ clean:
 	-find . -name 'out' -o -name 'input' -o -name 'interactive' -o -name 'exp_res'| xargs rm
 
 install:
-	cp bin/mgt bin/mgt-*.sh $PREFIX/bin
+	cp bin/mgt bin/mgt-*.sh $(PREFIX)/bin
+	mkdir -p /usr/share/mgt
+	cp share/mgt-completion.sh $(PREFIX)/share/mgt
 
 uninstall:
-	rm $PREFIX/bin/mgt-*.sh $PREFIX/bin/mgt
+	rm $(PREFIX)/bin/mgt-*.sh $(PREFIX)/bin/mgt
+	rm -rf $(PREFIX)/share/mgt
 
 .PHONY: tests
 tests:
