@@ -15,4 +15,19 @@ PRETTY_NAME="mgt task add -c todo -d \"fifth task\""
 
 [[ "$1" == "setup" ]] && setup
 
+# check test result
+cat > "check_test" << 'EOL'
+#!/bin/bash
+. ~/.mgtconfig
+set -x
+
+[ -d "$MGT_PROJECT_PATH" ] || exit 1
+[ -d "$MGT_PROJECT_PATH/done" ] || exit 1
+[ -d "$MGT_PROJECT_PATH/todo" ] || exit 1
+[ "$(ls "$MGT_PROJECT_PATH/todo/" | wc -l)" == "4" ] || exit 1 # wrong number of tasks
+
+exit 0
+EOL
+
+
 mgt task add -c todo -d "fifth task"
