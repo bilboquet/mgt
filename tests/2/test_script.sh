@@ -1,18 +1,14 @@
 #!/bin/bash
 
 . ../config_test
-function setup () {
-    echo "mgt init" > pretty_name
-    # expected result of the test
-    echo "nok" > exp_res
-    
-    # if interactive test uncomment folling line
-    # touch interactive
-    
-    # put input of the test, if any, into input: echo "values" > input
 
-    exit 0
-}
+# Expected result of the test
+EXP_RES="nok"
+
+# Test name that will be displayed before running
+PRETTY_NAME="mgt init (missing arg)"
+
+
 [[ "$1" == "setup" ]] && setup
 
 rm -rf "$MGT_PATH"

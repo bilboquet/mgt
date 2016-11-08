@@ -1,21 +1,18 @@
 #!/bin/bash
 
 . ../config_test
-function setup () {
 
-    # expected result of the test
-    echo "ok" > exp_res
+# Expected result of the test
+EXP_RES="ok"
 
-    # if interactive test uncomment folling line
-    # touch interactive
+# Test name that will be displayed before running
+PRETTY_NAME="mgt task add -c todo -d \"third task\""
 
-    # put input of the test, if any, into input: echo "values" > input
-    #seq=$'\030' #Send ^X to nano editor so it closes 
-    [[ $EDITOR =~ .*nano.* ]] && echo "^X" > input
-    [[ $EDITOR =~ .*vim.* ]] && echo ":x" > input
+# Automatically close the editor
+[[ $EDITOR =~ .*nano.* ]] && INPUTS="^X"
+[[ $EDITOR =~ .*vim.* ]] && INPUTS=":x"
 
-    exit 0
-}
+
 [[ "$1" == "setup" ]] && setup
 
-mgt task add -c todo -d description
+mgt task add -c todo -d "third task"

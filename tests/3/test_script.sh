@@ -1,18 +1,14 @@
 #!/bin/bash
 
 . ../config_test
-function setup () {
 
-    # expected result of the test
-    echo "ok" > exp_res
-    
-    # if interactive test uncomment folling line
-    # touch interactive
-    
-    # put input of the test, if any, into input: echo "values" > input
+# Expected result of the test
+EXP_RES="ok"
 
-    exit 0
-}
+# Test name that will be displayed before running
+PRETTY_NAME="mgt init --new"
+
+
 [[ "$1" == "setup" ]] && setup
 
 mgt init --new

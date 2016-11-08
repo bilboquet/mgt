@@ -1,18 +1,14 @@
 #!/bin/bash
 
 . ../config_test
-function setup () {
 
-# expected result of the test
-echo "ok" > exp_res
+# Expected result of the test
+EXP_RES="ok"
 
-# if interactive test uncomment folling line
-# touch interactive
+# Test name that will be displayed before running
+PRETTY_NAME="mgt init -n -r "$REMOTE" --force"
 
-# put input of the test, if any, into input: echo "values" > input
 
-    exit 0
-}
 [[ "$1" == "setup" ]] && setup
 
 rm -rf "$MGT_PATH"
