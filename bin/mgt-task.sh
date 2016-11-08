@@ -240,17 +240,17 @@ function mgt_task_search () {
     ### TODO : finish sort implementation
         sort_criteria="Date: "
     fi
-    task_list=$(grep -lr -e $grep_filter "$MGT_PROJECT_PATH/$category")
-    [[ $task_list == "" ]] && { echo "No task found."; exit 0; }
+    task_list=$(grep -lr "$grep_filter" "$MGT_PROJECT_PATH/$category")
+    [[ $task_list == "" ]] && { echo "No task found."; exit 1; }
     # get matching tasks, sort by sort_criteria, get file path
-    task_list=$(grep -He $sort_criteria $task_list | sort -k2 | sed -r "s|^(.*):$sort_criteria.*$|\1|")
+    task_list=$(grep -He "$sort_criteria" $task_list | sort -k2 | sed -r "s|^(.*):$sort_criteria.*$|\1|")
     echo "----------------------------------------------------------"
     echo "Task(s) matching: \"$grep_filter\""
     echo "category/shorten task_id: task description : sort criteria($sort_criteria)"
     echo "----------------------------------------------------------"
     for task in $task_list; do
 #        grep_filter="Description: "
-        task_description=$(grep -e $grep_filter $task | sed "s!$grep_filter!!")
+        task_description=$(grep "$grep_filter" $task | sed "s!$grep_filter!!")
         task_sort=$(grep -e $sort_criteria $task | sed "s!$sort_criteria!!")
         # shorten $task
         task=$(echo $task | sed -r "s|^.*/(.*)/([[:alnum:]]+)-.*$|\1/\2|")
