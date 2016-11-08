@@ -14,7 +14,7 @@ function setup () {
     [[ ! -z $INTERACTIVE ]] && touch interactive
 
     # put input of the test, if any, into input: echo "values" > input
-    [[ ! -z $INPUTS ]] && echo $INPUTS > input
+    [[ ! -z $INPUTS ]] && echo "$INPUTS" > input
 
     exit 0
 }
@@ -41,6 +41,18 @@ function new_test () {
 
 
 [[ "\$1" == "setup" ]] && setup
+
+# check test result, uncomment if needed
+#cat > "check_test" << 'EOL'
+##!/bin/bash
+#. ~/.mgtconfig
+#set -x
+#
+#nb_task=$(ls "$MGT_PROJECT_PATH/todo" | wc -l)
+#[[ $nb_task -eq 1 ]] || { exit 1 ; } # wrong number of tasks
+#exit 0
+#EOL
+
 
 # Test body goes here
 EOL
