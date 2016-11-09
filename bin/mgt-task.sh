@@ -234,13 +234,13 @@ function mgt_task_search () {
 
     if [ -z "$grep_filter" ]; then
         # in case of empty filter, add a "match all" filter
-        grep_filter="Description: "
+        grep_filter="-e Description: "
     fi 
     if [ -z "$sort_criteria" ]; then
     ### TODO : finish sort implementation
         sort_criteria="Date: "
     fi
-    task_list=$(grep -lr "$grep_filter" "$MGT_PROJECT_PATH/$category")
+    eval task_list=\$\(grep -lr "$grep_filter" "$MGT_PROJECT_PATH/$category"\)
     [[ $task_list == "" ]] && { echo "No task found."; exit 1; }
     # get matching tasks, sort by sort_criteria, get file path
     task_list=$(grep -He "$sort_criteria" $task_list | sort -k2 | sed -r "s|^(.*):$sort_criteria.*$|\1|")
@@ -249,12 +249,12 @@ function mgt_task_search () {
     echo "category/shorten task_id: task description : sort criteria($sort_criteria)"
     echo "----------------------------------------------------------"
     for task in $task_list; do
-#        grep_filter="Description: "
-        task_description=$(grep "$grep_filter" $task | sed "s!$grep_filter!!")
+        grep_filter="Description: "
+        task_description=$(grep -e "$grep_filter" $task | sed "s!$grep_filter!!")
         task_sort=$(grep -e $sort_criteria $task | sed "s!$sort_criteria!!")
         # shorten $task
-        task=$(echo $task | sed -r "s|^.*/(.*)/([[:alnum:]]+)-.*$|\1/\2|")
-        echo "  "$task": "$task_description": "$task_sort
+        task_short=$(echo $task | sed -r "s|^.*/(.*)/([[:alnum:]]+)-.*$|\1/\2|")
+        echo "  "$task_short": "$task_description": "$task_sort
         if [ ! -z $interactive ]; then
             while [ true ]; do
                 echo
@@ -269,14 +269,16 @@ function mgt_task_search () {
                         ;;
                     s|show)
                         echo "######################################"
-                        cat $MGT_PROJECT_PATH/$task
+                        ### TODO: use mgt task view
+                        cat "$task"
                         echo "######################################"
                         ;;
                     a)
-                        mgt task assign -c ${task%/*} --task ${task##*/} -u "$(git config user.name) <$(git config user.email)>"
+                        category=$(basename "${task%/*}")
+                        mgt task assign -c "$category" --task ${task##*/} -u "$(git config user.name) <$(git config user.email)>"
                         ;;
                     h|history)
-                        $GIT log $MGT_PROJECT_PATH/$task
+                        $GIT log "$task"
                         ;;
                     *)
                         ;;
