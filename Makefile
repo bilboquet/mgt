@@ -16,4 +16,4 @@ uninstall:
 
 .PHONY: tests
 tests:
-	cd tests && ./test_mgt.sh $(LIST)
+	cd tests && LC_ALL=C ./test_mgt.sh $(LIST)
