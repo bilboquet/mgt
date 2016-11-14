@@ -10,7 +10,7 @@ fi
 
 usage_tag() {
     echo "usage: mgt tag list"
-    echo "       mgt tag add -n <login> -e <email> -u <tagname>"
+    echo "       mgt tag add -l <label> -T <tag>"
     echo "       mgt tag rm <tag>"
     echo "       mgt tag <-h|--help>"
 }
@@ -33,7 +33,7 @@ usage_tag_list() {
 }
 
 if [ -z "$1" ]; then
-    usage
+    usage_tag
 fi
 
 case "$1" in
@@ -44,11 +44,11 @@ case "$1" in
         ;;
 
     add)
-        shift # Consume 'create'
-        argv=$(getopt -o n:u:e: -l name:,tagname:,email: -- "$@")
+        shift # Consume 'add'
+        argv=$(getopt -o l:T: -l label:tag: -- "$@")
         eval set -- "$argv"
         while true; do
-            case "$argv" in
+            case "$1" in
                 -T|--tag)
                     tag="$2"
                     ;;
@@ -63,8 +63,11 @@ case "$1" in
                     usage_tag_add
                     exit 1
             esac
+            shift 2
         done
-
+        
+        grep -q "^$tag:" $MGT_CONF_PATH/tags && { echo "Tag '$tag' already exist."; exit 1; }
+        
         echo "$tag:$label" >> $MGT_CONF_PATH/tags
         $GIT add $MGT_CONF_PATH/tags
         $GIT commit -s -m "tags: Add $tag"
@@ -72,12 +75,12 @@ case "$1" in
 
     rm)
         shift
-        argv=$(getopt -o n: -l name: -- "$@")
+        argv=$(getopt -o T: -l tag: -- "$@")
         eval set -- "$argv"
         while true; do
-            case "$argv" in
+            case "$1" in
                 -T|--tag)
-                    name="$2"
+                    tag="$2"
                     ;;
                 --)
                     shift
@@ -87,9 +90,12 @@ case "$1" in
                     usage_tag_mv
                     exit 1
             esac
+            shift 2
         done
+        
+        grep -q "^$tag:" $MGT_CONF_PATH/tags || { echo "Tag '$tag' not found."; exit 1; }
 
-        sed -i "/$1:/d" $MGT_CONF_PATH/tags
+        sed -i "/$tag:/d" $MGT_CONF_PATH/tags
         $GIT add $MGT_CONF_PATH/tags
         $GIT commit -s -m "tags: Remove $tag"
         ;;
