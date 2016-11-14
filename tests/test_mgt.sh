@@ -24,7 +24,8 @@ check_res () {
     [[ -e out.ref ]] && { diff -q out out.ref; diff_res=$?; }
     
     check="0"
-    if [ -x "check_test" ]; then
+    if [[ -e "check_test" ]]; then
+        chmod +x check_test
         cmd="./check_test > /dev/null 2>&1 "
         eval $cmd
         check=$?
