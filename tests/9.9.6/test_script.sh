@@ -21,10 +21,12 @@ cat > "check_test" << 'EOL'
 . ~/.mgtconfig
 set -x
 
+nb_task=$(ls "$MGT_PROJECT_PATH/todo" | wc -l)
+
 [ -d "$MGT_PROJECT_PATH" ] || exit 1
 [ -d "$MGT_PROJECT_PATH/done" ] || exit 1
 [ -d "$MGT_PROJECT_PATH/todo" ] || exit 1
-[ "$(ls "$MGT_PROJECT_PATH/todo/" | wc -l)" == "5" ] || exit 1 # wrong number of tasks
+[[ $nb_task -eq 5 ]] || exit 1 ; # wrong number of tasks
 
 exit 0
 EOL
