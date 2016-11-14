@@ -611,7 +611,7 @@ mgt_task_depends () {
         # merge old and new deps
         read -ra new_deps <<< "$on $deps"
         # remove duplicates
-        on=( $(printf "%s\n" "${new_deps[@]}" | sort -nu) )
+        on=( $(printf "%s\n" "${new_deps[@]}" | sort -u) )
         # flatten
         on=$(echo ${on[@]})
         
