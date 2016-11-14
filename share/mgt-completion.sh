@@ -1,4 +1,4 @@
-function _mgt_project_select () {
+_mgt_project_select () {
     local cur
     cur=${COMP_WORDS[COMP_CWORD]}
     prj_list=$(mgt project list | cut -b3-)
@@ -6,7 +6,7 @@ function _mgt_project_select () {
     return 0
 }
 
-function _mgt_project () {
+_mgt_project () {
     local opts cur
     cur=${COMP_WORDS[COMP_CWORD]}
     opts="-h --help init list select sync history"
@@ -30,14 +30,14 @@ function _mgt_project () {
     esac
 }
 
-function _mgt_task_seach_filter () {
+_mgt_task_seach_filter () {
     local opts="Task-Id= Author= Assignee= Date= Estimation= Tags= Depends= Description="
     local cur=${COMP_WORDS[COMP_CWORD]}
     COMPREPLY=( $( compgen -W "${opts}" -- ${cur} ) )
     return 0
 }
 
-function _mgt_task_seach () {
+_mgt_task_seach () {
     ###TODO: add --category
     local cur prev opts
     cur=${COMP_WORDS[COMP_CWORD]}
@@ -60,7 +60,7 @@ function _mgt_task_seach () {
     return 0
 }
 
-function _mgt_taskid () {
+_mgt_taskid () {
     local cur=${COMP_WORDS[COMP_CWORD]}
     local category
     # Is a category defined
@@ -86,14 +86,14 @@ function _mgt_taskid () {
     return 0
 }
 
-function _mgt_category () {
+_mgt_category () {
     local cur=${COMP_WORDS[COMP_CWORD]}
     local categories=$(mgt category list | tail -n +3 | cut -d':' -f 1)
     COMPREPLY=( $( compgen -W "$categories" -- ${cur} ) )
     return 0
 }
 
-function _mgt_user () {
+_mgt_user () {
     local cur=${COMP_WORDS[COMP_CWORD]}
     local users=$(mgt user list | tail -n +3 | cut -d':' -f 1)
     COMPREPLY=( $( compgen -W "$users" -- ${cur} ) )
@@ -101,7 +101,7 @@ function _mgt_user () {
     
 }
 
-function _mgt_task_mv (){
+_mgt_task_mv (){
     local cur prev opts
     cur=${COMP_WORDS[COMP_CWORD]}
     prev="${COMP_WORDS[COMP_CWORD-1]}"
@@ -134,7 +134,7 @@ function _mgt_task_mv (){
     return 0
 }
 
-function _mgt_task_assign () {
+_mgt_task_assign () {
     local cur prev opts
     cur=${COMP_WORDS[COMP_CWORD]}
     prev="${COMP_WORDS[COMP_CWORD-1]}"
@@ -173,7 +173,7 @@ function _mgt_task_assign () {
 
 }
 
-function _mgt_task_estimate () {
+_mgt_task_estimate () {
     local cur prev opts
     cur=${COMP_WORDS[COMP_CWORD]}
     prev="${COMP_WORDS[COMP_CWORD-1]}"
@@ -208,7 +208,7 @@ function _mgt_task_estimate () {
     return 0
 }
 
-function _mgt_task_depends () {
+_mgt_task_depends () {
     local cur prev opts
     cur=${COMP_WORDS[COMP_CWORD]}
     prev="${COMP_WORDS[COMP_CWORD-1]}"
@@ -245,7 +245,7 @@ function _mgt_task_depends () {
     return 0
 }
 
-function _mgt_task_basic () {
+_mgt_task_basic () {
     local cur prev opts
     cur=${COMP_WORDS[COMP_CWORD]}
     prev="${COMP_WORDS[COMP_CWORD-1]}"

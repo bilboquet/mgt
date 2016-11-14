@@ -14,7 +14,7 @@ usage_project () {
     echo "       mgt project history"
 }
 
-function create_initial_tags() {
+create_initial_tags () {
     echo "enhancement:Enhancement" > "$1"
     echo "bug:Bug" >> "$1"
     echo "duplicate:Duplicate" >> "$1"
@@ -24,11 +24,11 @@ function create_initial_tags() {
     echo "helpwanted:Help Wanted" >> "$1"
 }
 
-function create_initial_users () {
+create_initial_users () {
     echo "$(whoami):$(git config user.name) <$(git config user.email)>" > "$1"
 }
 
-function create_initial_categories() {
+create_initial_categories () {
     mgt category add -c "todo" -l "Todo" -d
     mgt category add -c "done" -l "Done"
 }
@@ -37,7 +37,7 @@ if [ -z "$1" ]; then
     usage_project
 fi
 
-function mgt_project_init () {
+mgt_project_init () {
     if [ -z "$1" ]; then
         echo "Project <name> cannot be empty"
         usage_project
@@ -65,7 +65,7 @@ function mgt_project_init () {
     exit $?
 }
 
-function mgt_project_select () {
+mgt_project_select () {
     $GIT checkout "$1"
     ret_val=$?
     remote=$($GIT remote | grep origin)
@@ -76,7 +76,7 @@ function mgt_project_select () {
     exit $ret_val
 }
 
-function mgt_project_sync () {
+mgt_project_sync () {
     remote=$($GIT remote | grep origin)
     if [ ! -z "$remote" ]; then
         $GIT pull --rebase origin $(basename $(cat $MGT_PATH/.git/HEAD | sed 's!.*: \(.*\)!\1!'))
@@ -93,7 +93,7 @@ function mgt_project_sync () {
     fi
 }
 
-function mgt_project_history () {
+mgt_project_history () {
     $GIT log
 }
 case $1 in

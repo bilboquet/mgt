@@ -2,7 +2,7 @@ REMOTE=/tmp/test.git
 
 . ~/.mgtconfig
 
-function setup () {
+setup () {
     # expected result of the test
     [[ -z $EXP_RES ]] && { echo 'Error: $EXP_RES is not defined'; exit 1; }
     echo "$EXP_RES" > exp_res
@@ -19,7 +19,7 @@ function setup () {
     exit 0
 }
 
-function new_test () {
+new_test () {
     [[ $# -ne 1 ]] && { echo "Error: only one argument is need: test_name"; exit 1; }
     mkdir -p "$1"
     cat > "$1/test_script.sh" << EOL

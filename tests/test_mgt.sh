@@ -15,7 +15,7 @@ sed -i -e 's#MGT_PATH=~/.mgt.*#MGT_PATH=/tmp/mgt-test#' ~/.mgtconfig
 
 
 # check_res "test_name" "result"
-function check_res () {
+check_res () {
     exp_res=$(cat exp_res 2>&1) || { echo "Error: can't find expected result for test $test_name" ; return 1; }
     [[ $exp_res == "ok" || $exp_res == "nok" ]] || { echo "Error: invalid expected result $exp_res for test:$test_name" ; return 1; }
      
@@ -72,7 +72,7 @@ function check_res () {
 }
 
 # do_test "test_name"
-function do_test () {
+do_test () {
     test_name="$1"
     echo -n "# test $test_name"
     cd "$test_name" || { echo "\nError: can't find test:$test_name" ; return 1; }

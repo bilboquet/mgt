@@ -82,7 +82,7 @@ usage_task_estimate() {
 
 # Return 0 if $1 is a defined category
 # else print a message and return 1
-function exist_category () {
+exist_category () {
     if [ ! -d "$MGT_PROJECT_PATH/$1" ]; then
         echo "mgt: category: '$1' not found"
         return 1
@@ -92,7 +92,7 @@ function exist_category () {
 
 # Return 0 if $1 is a defined task AND $2 is a defined category
 # else print a message and return 1
-function exist_task_in_cat () {
+exist_task_in_cat () {
     if exist_category "$2" ; then
          if [ -f "$MGT_PROJECT_PATH/$2/$1" ]; then
             return 0
@@ -105,7 +105,7 @@ function exist_task_in_cat () {
 }
 
 # Return 0 if $1 is a defined task 
-function exist_task () {
+exist_task () {
     task=$(find "$MGT_PROJECT_PATH" -name "$1")
     if [ -e "$task" ]; then 
         return 0 
@@ -113,7 +113,7 @@ function exist_task () {
     return 1
 }
 
-function category_work_load () {
+category_work_load () {
     # get Estimated workload for each task in the category
     work=( $(grep -s -h -e 'Estimation:' "$MGT_PROJECT_PATH/$1/"* | grep -v -e 'None' | sed -r 's|Estimation: (.*)|\1|') )
     
@@ -149,7 +149,7 @@ function category_work_load () {
     done
     echo "Estimated workload for $1: $tot_weeks week(s) $tot_days day(s) $tot_hours hour(s)" 
 }
-function mgt_task_view () {
+mgt_task_view () {
     argv=$(getopt -o c:t: -l category:,task: -- "$@")
     eval set -- "$argv"
     while [ true ]; do
@@ -193,7 +193,7 @@ function mgt_task_view () {
     cat "$MGT_PROJECT_PATH/$category/$task_id"
     exit $?
 }
-function mgt_task_search () {
+mgt_task_search () {
     grep_filter=""
     argv=$(getopt -o f:c:ia -l filter:,category:,interactive -- "$@")
     eval set -- "$argv"
@@ -289,7 +289,7 @@ function mgt_task_search () {
     exit $?
 }
 
-function mgt_task_add () {
+mgt_task_add () {
     argv=$(getopt -o c:T:d: -l category:,tags:,description: -- "$@")
     eval set -- "$argv"
 
@@ -363,7 +363,7 @@ function mgt_task_add () {
     echo "Task: $category/$task_id added successfully"
 }
 
-function mgt_task_mv () {
+mgt_task_mv () {
     argv=$(getopt -o t: -l task:,to:,from: -- "$@")
     eval set -- "$argv"
     while [ true ]; do
@@ -418,7 +418,7 @@ function mgt_task_mv () {
     exit $?
 }
 
-function mgt_task_edit () {
+mgt_task_edit () {
     argv=$(getopt -o c:t: -l category:,task: -- "$@")
     eval set -- "$argv"
     while [ true ]; do
@@ -459,7 +459,7 @@ function mgt_task_edit () {
     exit $?
 }
 
-function mgt_task_rm () {
+mgt_task_rm () {
 ### TODO: rewrite using getopt
     while [ true ]; do
         shift
@@ -498,7 +498,7 @@ function mgt_task_rm () {
     exit $?
 }
 
-function mgt_task_assign () {
+mgt_task_assign () {
     argv=$(getopt -o c:t:u: -l category:,task:,username: -- "$@")
     eval set -- "$argv"
     while [ true ]; do
@@ -547,7 +547,7 @@ function mgt_task_assign () {
     exit $?
 }
 
-function mgt_task_depends () {
+mgt_task_depends () {
     argv=$(getopt -o c:t:o: -l category:,task:,on:,ndep: -- "$@")
     eval set -- "$argv"
     local on task_id category ndep
@@ -638,7 +638,7 @@ function mgt_task_depends () {
     exit $?
 }
 
-function mgt_task_estimate () {
+mgt_task_estimate () {
     argv=$(getopt -o c:t:e: -l category:,task:,estimation: -- "$@")
     eval set -- "$argv"
     while [ true ]; do
@@ -705,7 +705,7 @@ function mgt_task_estimate () {
     exit $?
 }
 
-function mgt_task_history () {
+mgt_task_history () {
     argv=$(getopt -o c:t: -l category:,task: -- "$@")
     eval set -- "$argv"
     while [ true ]; do
