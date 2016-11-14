@@ -101,6 +101,13 @@ _mgt_user () {
     
 }
 
+_mgt_tag_helper ()  {
+    local cur=${COMP_WORDS[COMP_CWORD]}
+    local users=$(mgt tag list | tail -n +3 | cut -d':' -f 1)
+    COMPREPLY=( $( compgen -W "$users" -- ${cur} ) )
+    return 0
+}
+
 _mgt_task_mv (){
     local cur prev opts
     cur=${COMP_WORDS[COMP_CWORD]}
@@ -275,6 +282,7 @@ _mgt_task_basic () {
     COMPREPLY=( $( compgen -W "${opts}" -- ${cur} ) )
     return 0
 }
+
 _mgt_task () {
     local opts cur
     cur=${COMP_WORDS[COMP_CWORD]}
@@ -320,6 +328,72 @@ _mgt_task () {
     
 }
 
+_mgt_tag_add () {
+    local cur prev opts
+    cur=${COMP_WORDS[COMP_CWORD]}
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    opts="-l --label -T --tag"
+
+    # filter used options
+    if [[ "$COMP_LINE" == *" --label "* ||  "$COMP_LINE" == *" -l "* ]]; then
+        opts="${opts/--label}"
+        opts="${opts/-l}"
+    fi
+    if [[ "$COMP_LINE" == *" --tag "* ||  "$COMP_LINE" == *" -T "* ]]; then
+        opts="${opts/--tag}"
+        opts="${opts/-T}"
+    fi
+
+    COMPREPLY=( $( compgen -W "${opts}" -- ${cur} ) )
+    return 0
+}
+
+_mgt_tag_rm ()
+ {
+    local cur prev opts
+    cur=${COMP_WORDS[COMP_CWORD]}
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    opts="-T --tag"
+
+    # filter used options
+    if [[ "$COMP_LINE" == *" --tag "* ||  "$COMP_LINE" == *" -T "* ]]; then
+        opts="${opts/--tag}"
+        opts="${opts/-T}"
+    fi
+
+    case "$prev" in
+        -T|--tag)
+            _mgt_tag_helper
+            return 0
+            ;;
+    esac
+
+    COMPREPLY=( $( compgen -W "${opts}" -- ${cur} ) )
+    return 0
+}
+
+_mgt_tag () {
+    local opts cur
+    cur=${COMP_WORDS[COMP_CWORD]}
+    opts="-h --help list add rm"
+    case "${COMP_WORDS[2]}" in
+        -h|--help)
+            ;;
+        list)
+            ;;
+        add)
+            _mgt_tag_add
+            ;;
+        rm)
+            _mgt_tag_rm
+            ;;
+        *)
+            COMPREPLY=( $( compgen -W "${opts}" -- ${cur} ) )
+            return 0
+            ;;
+    esac
+}
+
 _mgt () {
     . ~/.mgtconfig
     local cur prev opts
@@ -327,7 +401,10 @@ _mgt () {
     COMPREPLY=()   # Array variable storing the possible completions.
     cur=${COMP_WORDS[COMP_CWORD]}
     prev="${COMP_WORDS[COMP_CWORD-1]}"
-    opts="init project task category config"
+    opts="init project task category config tag"
+
+    ### required to make completion on 'tag' (else 'tag' which is $cur is not consumed
+    [[ $COMP_CWORD -eq 1 ]] && { COMPREPLY=( $(compgen -W "${opts}" -- ${cur} ) ) ; return 0; }
 
     case "${COMP_WORDS[1]}" in
         init)
@@ -344,8 +421,11 @@ _mgt () {
             ;;
         config)
             ;;
+        tag)
+            _mgt_tag
+            ;;
         *)
-            COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+            COMPREPLY=( $(compgen -W "${opts}" -- ${cur} ) )
             return 0
             ;;
     esac
