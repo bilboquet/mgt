@@ -130,8 +130,11 @@ case "$1" in
     config)
         shift
         mgt-config.sh "$@"
-	    ;;
-
+        ;;
+    comment)
+       shift
+       mgt-comment.sh "$@"
+        ;;
     -h|--help)
         usage
         ;;

@@ -63,7 +63,7 @@ _mgt_task_seach () {
 _mgt_taskid () {
     local cur=${COMP_WORDS[COMP_CWORD]}
     local category
-    # Is a category defined
+    # Is a category defined?
     for (( ind=0 ; $ind <= ${#COMP_WORDS[@]} ; ++ind )); do
         local cur_arg="${COMP_WORDS[$ind]}"
         if [[ "$cur_arg" == "-c" || "$cur_arg" == "--category" ]]; then
@@ -348,8 +348,7 @@ _mgt_tag_add () {
     return 0
 }
 
-_mgt_tag_rm ()
- {
+_mgt_tag_rm () {
     local cur prev opts
     cur=${COMP_WORDS[COMP_CWORD]}
     prev="${COMP_WORDS[COMP_CWORD-1]}"
@@ -394,6 +393,108 @@ _mgt_tag () {
     esac
 }
 
+_mgt_id () {
+    local cur id
+    cur=${COMP_WORDS[COMP_CWORD]}
+    echo
+    echo -n "Completion on 
+    case "$1" in
+        task)
+            echo "$1."
+            id=$(find "$MGT_PROJECT_PATH/" -type f -not -path "$MGT_PROJECT_PATH/comments/*" -not -name '.*' -exec basename {} \;)
+            ;;
+        comment)
+            echo "$1."
+            id=$(find "$MGT_PROJECT_PATH/comments" -type f -not -name '.*' -exec basename {} \;)
+            ;;
+        '')
+            echo "all id."
+            id=$(find "$MGT_PROJECT_PATH/" -type f -not -name '.*' -exec basename {} \;)
+            ;;
+        *)
+            echo "Error: wrong argument to -o."
+            id=''
+            ;;
+    esac
+    
+#    local tasks=$(find $MGT_PROJECT_PATH/${category/-c /} -type f -not -name '.*' -exec basename {} \;)
+    COMPREPLY=( $( compgen -W "$id" -- ${cur} ) )
+    
+    
+}
+
+_mgt_comment_add () {
+    local cur prev opts
+    cur=${COMP_WORDS[COMP_CWORD]}
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    opts="-o --on -i --id -m --message"
+
+    # filter used options
+    case "$COMP_LINE" in
+        *" --on "*|*" -o "*)
+            opts="${opts/--on}"
+            opts="${opts/-o}"
+            ;;&
+        *" --id "*|*" -i "*)
+            opts="${opts/--id}"
+            opts="${opts/-i}"
+            ;;&
+        *" --message "*|*" -m "*)
+            opts="${opts/--message}"
+            opts="${opts/-m}"
+            ;;
+    esac
+
+    case "$prev" in
+        -o|--on)
+            COMPREPLY=( $( compgen -W "task comment" -- ${cur} ) )
+            return 0
+            ;;
+        -i|--id)
+            # Is a $on defined?
+            for (( ind=0 ; $ind <= ${#COMP_WORDS[@]} ; ++ind )); do
+                local cur_arg="${COMP_WORDS[$ind]}"
+                if [[ "$cur_arg" == "-o" || "$cur_arg" == "--on" ]]; then
+                    # Let's suppose next element is $on
+                    on=${COMP_WORDS[$ind+1]}
+                    break
+                fi
+            done
+            _mgt_id "$on"
+            return 0
+            ;;
+        -m|--message)
+            return 0
+            ;;
+    esac
+
+    COMPREPLY=( $( compgen -W "${opts}" -- ${cur} ) )
+    return 0
+}
+
+_mgt_comment () {
+    local opts cur
+    cur=${COMP_WORDS[COMP_CWORD]}
+    opts="-h --help add edit show"
+    case "${COMP_WORDS[2]}" in
+        -h|--help)
+            ;;
+        show)
+            _mgt_comment_show
+            ;;
+        add)
+            _mgt_comment_add
+            ;;
+        edit)
+            _mgt_comment_edit
+            ;;
+        *)
+            COMPREPLY=( $( compgen -W "${opts}" -- ${cur} ) )
+            return 0
+            ;;
+    esac
+}
+
 _mgt () {
     . ~/.mgtconfig
     local cur prev opts
@@ -401,7 +502,7 @@ _mgt () {
     COMPREPLY=()   # Array variable storing the possible completions.
     cur=${COMP_WORDS[COMP_CWORD]}
     prev="${COMP_WORDS[COMP_CWORD-1]}"
-    opts="init project task category config tag"
+    opts="init project task category config tag comment"
 
     ### required to make completion on 'tag' (else 'tag' which is $cur is not consumed
     [[ $COMP_CWORD -eq 1 ]] && { COMPREPLY=( $(compgen -W "${opts}" -- ${cur} ) ) ; return 0; }
@@ -423,6 +524,9 @@ _mgt () {
             ;;
         tag)
             _mgt_tag
+            ;;
+        comment)
+            _mgt_comment
             ;;
         *)
             COMPREPLY=( $(compgen -W "${opts}" -- ${cur} ) )

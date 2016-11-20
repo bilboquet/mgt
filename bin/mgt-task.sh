@@ -258,16 +258,18 @@ mgt_task_search () {
         if [ ! -z $interactive ]; then
             while [ true ]; do
                 echo
-                echo "(q)uit, (n)ext, (s)how details, (a)ssign to me, (h)istory."
-                read input
+                echo -n "(q)uit, (n)ext, show (d)etails, (a)ssign to me, (h)istory, (c)omment"
+                [[ -d "$MGT_PROJECT_PATH/comments/${task##*/}_d/" ]] && echo -n ", (s)how comment"
+                echo "."
+                read  -s -n 1 input
                 case $input in
-                    q|quit)
+                    q)
                         break 2
                         ;;
-                    ""|n|next)
+                    ""|n)
                         break
                         ;;
-                    s|show)
+                    d)
                         echo "######################################"
                         ### TODO: use mgt task view
                         cat "$task"
@@ -277,8 +279,14 @@ mgt_task_search () {
                         category=$(basename "${task%/*}")
                         mgt task assign -c "$category" --task ${task##*/} -u "$(git config user.name) <$(git config user.email)>"
                         ;;
-                    h|history)
+                    h)
                         $GIT log "$task"
+                        ;;
+                    c)
+                        mgt comment add -o "task" -i "${task##*/}" -m "__replace_me__"
+                        ;;
+                    s)
+                        [[ -d "$MGT_PROJECT_PATH/comments/${task##*/}_d/" ]] && mgt comment show -mi -i "${task##*/}"
                         ;;
                     *)
                         ;;
