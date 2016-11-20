@@ -9,7 +9,7 @@ EXP_RES="ok"
 PRETTY_NAME="mgt task search -i"
 
 # Apply a sequence of commande in interactive search
-INPUTS=$'s\nh\na\nh\nq'
+INPUTS=$'dhahq'
 
 
 [[ "$1" == "setup" ]] && setup
