@@ -397,7 +397,7 @@ _mgt_id () {
     local cur id
     cur=${COMP_WORDS[COMP_CWORD]}
     echo
-    echo -n "Completion on 
+    echo -n "Completion on "
     case "$1" in
         task)
             echo "$1."
@@ -495,6 +495,27 @@ _mgt_comment () {
     esac
 }
 
+_mgt_organization () {
+    local opts cur
+    cur=${COMP_WORDS[COMP_CWORD]}
+    opts="-h --help list select"
+    case "${COMP_WORDS[2]}" in
+        -h|--help)
+            ;;
+        list)
+            ;;
+        select)
+            org=$(mgt organization list | tail -n +4)
+            COMPREPLY=( $( compgen -W "${org}" -- ${cur} ) )
+            return 0
+            ;;
+        *)
+            COMPREPLY=( $( compgen -W "${opts}" -- ${cur} ) )
+            return 0
+            ;;
+    esac
+}
+
 _mgt () {
     . ~/.mgtconfig
     local cur prev opts
@@ -502,14 +523,14 @@ _mgt () {
     COMPREPLY=()   # Array variable storing the possible completions.
     cur=${COMP_WORDS[COMP_CWORD]}
     prev="${COMP_WORDS[COMP_CWORD-1]}"
-    opts="init project task category config tag comment"
+    opts="init project task category config tag comment organization"
 
     ### required to make completion on 'tag' (else 'tag' which is $cur is not consumed
     [[ $COMP_CWORD -eq 1 ]] && { COMPREPLY=( $(compgen -W "${opts}" -- ${cur} ) ) ; return 0; }
 
     case "${COMP_WORDS[1]}" in
         init)
-            COMPREPLY=( $( compgen -W "-h --help  -n --new -r --remote --force" -- ${cur} ) )
+            COMPREPLY=( $( compgen -W "-h --help  -n --new -r --remote --force -o --organization" -- ${cur} ) )
             return 0
             ;;
         project)
@@ -527,6 +548,9 @@ _mgt () {
             ;;
         comment)
             _mgt_comment
+            ;;
+        organization)
+            _mgt_organization
             ;;
         *)
             COMPREPLY=( $(compgen -W "${opts}" -- ${cur} ) )

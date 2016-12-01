@@ -3,11 +3,12 @@
 PATH=$PATH:$(dirname $0)
 
 usage_mgt () {
-    echo "usage: mgt init <-h|--help> -n|--new -r|--remote <remote> [--force]"
+    echo "usage: mgt init <-h|--help> -o|--organization <organization name> | -n|--new -r|--remote <remote> [--force]"
     echo "       mgt project <-h|--help|init|list|select|sync> ..."
     echo "       mgt task <-h|--help|create|move|edit||comment|tag|rm|filter> ..."
     echo "       mgt category <-h|--help|create|edit|rm|filter> ..."
     echo "       mgt config <-h|--help|-l|--list|set|get> ..."
+    echo "       mgt organization <-h|--help|list|select|add|rename> ..."
 }
 
 if [ -z "$EDITOR" ]; then
@@ -22,7 +23,7 @@ case "$1" in
         new=n
         force=n
 
-        argv=$(getopt -o r:n -l remote:,new,force -- "$@")
+        argv=$(getopt -o r:no: -l remote:,new,force,organization: -- "$@")
         eval set -- "$argv"
         while [ true ]; do
             case "$1" in
@@ -35,10 +36,13 @@ case "$1" in
                     force=-f
                     ;;
 
-		        -n|--new)
-		            new=y
-		            ;;
-
+                -n|--new)
+                    new=y
+                    ;;
+                -o|--organization)
+                    org="$2"
+                    shift
+                    ;;
                 --)
                     shift
                     break
@@ -51,25 +55,37 @@ case "$1" in
             esac
             shift #next arg
         done
+        
+        [[ -z "$org" ]] && org="default"
 
-        if [ ! -e ~/.mgtconfig ]; then 
-            touch ~/.mgtconfig
-            echo '### Do not modify' >> ~/.mgtconfig
+        if [[ ! -e ~/.mgtconfig ]]; then
+            echo 'Creating ~/.mgtconfig'
+            echo '### Do not modify' > ~/.mgtconfig
             echo '### Variables' >> ~/.mgtconfig
-            echo 'MGT_PATH=~/.mgt' >> ~/.mgtconfig
+            echo "MGT_ORG=\"$org\"" >> ~/.mgtconfig
+            echo 'MGT_PATH=~/.mgt/$MGT_ORG' >> ~/.mgtconfig
             echo 'MGT_CONF_PATH=$MGT_PATH/conf.d' >> ~/.mgtconfig
             echo 'MGT_PROJECT_PATH=$MGT_PATH/project' >> ~/.mgtconfig
             echo '### Commands' >> ~/.mgtconfig
             echo 'GIT="git --work-tree=$MGT_PATH --git-dir=$MGT_PATH/.git"' >> ~/.mgtconfig
-        else
-            echo "~/.mgtconfig already exists, won't modify it."
         fi
+        
+        [[ "$org" != "default" ]] && sed -i -e "s|MGT_ORG=.*|MGT_ORG=\"$org\"|" ~/.mgtconfig
 
         . ~/.mgtconfig
 
+        [[ -d "$MGT_PATH" ]] && error "organization \"$MGT_ORG\" already exists."
+
+        mkdir -p "$MGT_PATH"
+        # Create work dirs
+        mkdir -p "$MGT_PATH/conf.d"
+        mkdir -p "$MGT_PATH/project"
+#        mkdir -p "$MGT_PATH/.git"
+
+        echo "organization \"$MGT_ORG\" created."
+
+
         if [ "$new" == "y" ]; then
-            mkdir -p $MGT_PATH/conf.d
-            mkdir -p $MGT_PATH/project
             echo "mgt repository" > $MGT_PATH/README
 
             $GIT init
@@ -90,9 +106,6 @@ case "$1" in
         else
             if [ ! -z "$remote" ]; then
                 git clone $remote $MGT_PATH
-
-                mkdir -p $MGT_PATH/conf.d
-                mkdir -p $MGT_PATH/project
             else
                 echo " *** You specified a not new remote: --remote is then mandatory..."
                 echo ""
@@ -134,6 +147,10 @@ case "$1" in
     comment)
        shift
        mgt-comment.sh "$@"
+       ;;
+    organization)
+        shift
+        mgt-organization.sh "$@"
         ;;
     -h|--help)
         usage
